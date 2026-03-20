@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-20
+> Aggiornato: 2026-03-20 (sessione 2)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -37,13 +37,24 @@
 ---
 
 ## Fase 1 — Fondamenta
-**Target: Settimane 3-4 | Stato: ⬜ Non iniziato**
+**Target: Settimane 3-4 | Stato: 🟡 In corso**
 
-⬜ Multi-tenant: migrations `organizations`, `points_of_sale`
-⬜ Middleware `ResolveTenant` — identifica org da token, switcha schema PostgreSQL
+✅ Multi-tenant: migrations `organizations`, `points_of_sale` — 2026-03-20
+✅ Migration users: aggiunto `organization_id` (uuid FK) e `is_active` — 2026-03-20
+✅ Model `Organization` (HasUuids, relazioni HasMany POS e User, getTenantSchemaName) — 2026-03-20
+✅ Model `PointOfSale` (HasUuids, feature flags come colonne dirette, BelongsTo Org) — 2026-03-20
+✅ Model `User` aggiornato (HasApiTokens, BelongsTo Organization) — 2026-03-20
+✅ Middleware `ResolveTenant` — identifica org da token, switcha schema PostgreSQL — 2026-03-20
+✅ routes/api.php configurato con route tenant-aware e health endpoint — 2026-03-20
+✅ bootstrap/app.php aggiornato (api routes + alias middleware `tenant`) — 2026-03-20
+✅ Factory `OrganizationFactory`, `PointOfSaleFactory`, `UserFactory` aggiornata — 2026-03-20
+✅ Sanctum migrations pubblicate (personal_access_tokens) — 2026-03-20
+✅ DatabaseSeeder: 2 org (Ottica Rossi + Ottica Bianchi), 3 POS, 4 utenti — 2026-03-20
+✅ Feature test `OrganizationTest` (7 test) — PASS — 2026-03-20
+✅ Feature test `ResolveTenantTest` (6 test incl. 401 no-token, 401 invalid, schema switch) — PASS — 2026-03-20
+✅ 15/15 test passati — 2026-03-20
 ⬜ Middleware `EnforceSessionLimit` — conta sessioni attive vs limite POS
-⬜ Seeder dati di test (2 org, 3 POS, utenti vari)
-⬜ Laravel Sanctum setup (login, logout, switch POS)
+⬜ Laravel Sanctum setup completo (login endpoint, logout, switch POS)
 ⬜ RBAC: migrations `roles`, `permissions`, `role_permissions`, `user_pos_roles`
 ⬜ Spatie Permission integrato con logica multi-POS
 ⬜ Helper `userCan($permission, $pos_id)`
@@ -187,14 +198,13 @@
 
 ## Prossimo task da eseguire
 
-**Iniziare Fase 1 — Fondamenta**
+**Continuare Fase 1 — Auth + RBAC + Device Sessions**
 
-Primo task concreto:
-1. Creare le migrations `organizations` e `points_of_sale` con tutti i campi (incluse colonne feature flag come da THEJA_MASTER.md §7)
-2. Implementare il middleware `ResolveTenant` che switcha schema PostgreSQL
-3. Configurare staging AWS (obbligatorio entro fine Fase 1 per testare il multi-tenant su RDS)
-
-Prima di iniziare la Fase 1, verificare che `docker compose up -d` funzioni sul proprio ambiente locale e che `php artisan migrate` giri senza errori sul DB locale.
+Prossimi task in ordine:
+1. **Auth endpoints** — `POST /api/auth/login` con selezione POS, `POST /api/auth/logout` via Sanctum
+2. **RBAC** — migrations `roles`, `permissions`, `user_pos_roles` + Spatie Permission con logica multi-POS + helper `userCan($permission, $pos_id)`
+3. **Device sessions** — migration `device_sessions` + middleware `EnforceSessionLimit` + API lista/invalidazione + WebSocket Soketi
+4. **Middleware CheckFeatureActive** — legge feature flags da POS e blocca API se add-on non attivo
 
 ---
 
