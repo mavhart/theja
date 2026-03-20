@@ -1,0 +1,86 @@
+name: API Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/api-tests.yml'
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/api-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: theja_test
+          POSTGRES_USER: theja
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo, pdo_pgsql, redis, mbstring, openssl, zip, curl, fileinfo, intl, bcmath, xml, tokenizer
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('apps/api/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        working-directory: apps/api
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy .env.testing → .env
+        working-directory: apps/api
+        run: cp .env.testing .env
+
+      - name: Generate application key
+        working-directory: apps/api
+        run: php artisan key:generate --ansi
+
+      - name: Run migrations (testing DB)
+        working-directory: apps/api
+        run: php artisan migrate --force --ansi
+
+      - name: Run tests
+        working-directory: apps/api
+        run: php artisan test --ansi
+        # Coverage abilitata ma senza --min durante lo sviluppo iniziale.
+        # Riattivare con: php artisan test --coverage --min=80
+        # quando la codebase ha test sufficienti (Fase 1+).

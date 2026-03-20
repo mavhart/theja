@@ -1,0 +1,21 @@
+{
+  "name": "theja",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Theja — gestionale SaaS enterprise per ottici",
+  "scripts": {
+    "dev": "concurrently --names \"api,web\" --prefix-colors \"blue,green\" \"pnpm --filter @theja/api dev\" \"pnpm --filter @theja/web dev\"",
+    "build": "pnpm --filter @theja/web build",
+    "test": "concurrently --names \"api,web\" --prefix-colors \"blue,green\" \"pnpm --filter @theja/api test\" \"pnpm --filter @theja/web test\"",
+    "type-check": "pnpm --filter @theja/web type-check",
+    "lint": "pnpm --filter @theja/web lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@10.32.1"
+}

@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: theja-postgres
+    environment:
+      POSTGRES_DB: theja
+      POSTGRES_USER: theja
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U theja"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: theja-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  soketi:
+    image: quay.io/soketi/soketi:latest-16-alpine
+    container_name: theja-soketi
+    environment:
+      SOKETI_DEBUG: "1"
+      SOKETI_DEFAULT_APP_ID: "theja"
+      SOKETI_DEFAULT_APP_KEY: "theja-key"
+      SOKETI_DEFAULT_APP_SECRET: "theja-secret"
+    ports:
+      - "6001:6001"
+      - "9601:9601"
+
+volumes:
+  postgres_data:
+  redis_data:

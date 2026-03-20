@@ -1,0 +1,52 @@
+name: Web Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/web-tests.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/web-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check (@theja/web)
+        run: pnpm --filter @theja/web type-check
+
+      - name: Lint (@theja/web)
+        run: pnpm --filter @theja/web lint
+
+      - name: Test (@theja/web)
+        run: pnpm --filter @theja/web test
+        # Attualmente: echo "No tests yet" — exit 0.
+        # Dalla Fase 1 aggiungere Jest/Vitest e rimuovere il placeholder.

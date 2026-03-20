@@ -1,0 +1,113 @@
+# ============================================================
+# .gitignore — Theja monorepo
+# Monorepo: pnpm workspaces + Laravel 11 + Next.js 14
+# ============================================================
+
+# ─── Dipendenze ──────────────────────────────────────────────
+node_modules/
+vendor/
+
+# ─── Variabili d'ambiente ─────────────────────────────────────
+# Regola: in git solo .env.example e .env.testing — mai i file attivi
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.testing
+
+# Per sicurezza, esclusioni esplicite per ogni app
+apps/api/.env
+apps/web/.env.local
+apps/web/.env.development.local
+apps/web/.env.test.local
+apps/web/.env.production.local
+
+# ─── Build artifacts — Next.js ───────────────────────────────
+.next/
+out/
+
+# ─── Build artifacts — generici ──────────────────────────────
+dist/
+build/
+
+# ─── PWA — file generati da next-pwa (non committare) ────────
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/workbox-*.js
+apps/web/public/workbox-*.js.map
+apps/web/public/worker-*.js
+apps/web/public/worker-*.js.map
+apps/web/public/fallback-*.js
+apps/web/public/fallback-*.js.map
+
+# ─── Laravel ─────────────────────────────────────────────────
+apps/api/bootstrap/cache/*.php
+apps/api/public/hot
+apps/api/public/storage
+apps/api/storage/*.key
+apps/api/storage/app/public
+apps/api/storage/debugbar/
+apps/api/storage/logs/
+apps/api/storage/framework/cache/
+apps/api/storage/framework/sessions/
+apps/api/storage/framework/testing/
+apps/api/storage/framework/views/
+
+# ─── Log ─────────────────────────────────────────────────────
+*.log
+*.log.*
+
+# ─── Test coverage ───────────────────────────────────────────
+coverage/
+.coverage
+.phpunit.cache/
+.phpunit.result.cache
+
+# ─── OS ──────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ─── IDE e editor ────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*.orig
+*.bak
+*.tmp
+
+# ─── Cursor IDE ──────────────────────────────────────────────
+.cursor/
+
+# ─── pnpm ────────────────────────────────────────────────────
+# pnpm-lock.yaml va COMMITTATO (non ignorare)
+.pnpm-store/
+.pnpm-debug.log
+
+# ─── Certificati e chiavi (mai in git) ───────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+!apps/api/.env.example
+
+# ─── Terraform (infra) ───────────────────────────────────────
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/*.tfstate.*.backup
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+
+# ─── Misc ────────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.rar
