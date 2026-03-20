@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-20 (sessione 2)
+> Aggiornato: 2026-03-20 (sessione 3)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -53,17 +53,21 @@
 ✅ Feature test `OrganizationTest` (7 test) — PASS — 2026-03-20
 ✅ Feature test `ResolveTenantTest` (6 test incl. 401 no-token, 401 invalid, schema switch) — PASS — 2026-03-20
 ✅ 15/15 test passati — 2026-03-20
-⬜ Middleware `EnforceSessionLimit` — conta sessioni attive vs limite POS
-⬜ Laravel Sanctum setup completo (login endpoint, logout, switch POS)
-⬜ RBAC: migrations `roles`, `permissions`, `role_permissions`, `user_pos_roles`
-⬜ Spatie Permission integrato con logica multi-POS
-⬜ Helper `userCan($permission, $pos_id)`
-⬜ Migration `device_sessions` + logica device fingerprint
-⬜ API sessioni attive + invalidazione remota
+✅ Middleware `EnforceSessionLimit` — conta sessioni attive vs limite POS, HTTP 423 — 2026-03-20
+✅ Auth endpoints: `POST /api/auth/login`, `POST /api/auth/select-pos`, `POST /api/auth/logout`, `GET /api/auth/me` — 2026-03-20
+✅ RBAC: Spatie Permission migrations (`roles`, `permissions`, `role_has_permissions`, `model_has_roles`) — 2026-03-20
+✅ Migration `user_pos_roles` (user_id, pos_id, role_id, can_see_purchase_prices) — 2026-03-20
+✅ Spatie Permission: 5 ruoli sistema (org_owner, pos_manager, optician, sales, cashier) + 15 permessi — 2026-03-20
+✅ Helper `PermissionHelper::userCan($user, $permission, $posId)` + `permissionsForPos()` — 2026-03-20
+✅ Migration `device_sessions` + Model `DeviceSession` + Model `UserPosRole` — 2026-03-20
+✅ `SessionController`: GET /api/sessions + DELETE /api/sessions/{id} — 2026-03-20
+✅ Command `theja:cleanup-sessions` + scheduler hourly — 2026-03-20
+✅ Middleware `CheckFeatureActive` — blocca API se feature non attiva sul POS, HTTP 403 — 2026-03-20
+✅ DatabaseSeeder aggiornato con RolePermissionSeeder + user_pos_roles — 2026-03-20
+✅ Feature test `AuthTest` (8 test) + `SessionTest` (7 test) — 30/30 PASS — 2026-03-20
+✅ predis/predis installato (phpredis non disponibile su questa macchina dev) — 2026-03-20
 ⬜ WebSocket Broadcasting (Soketi) — channel `session.{id}`
 ⬜ Frontend: modale "Sessione attiva su [device] — vuoi spostarti qui?"
-⬜ Job schedulato: cleanup sessioni inattive >8h
-⬜ Middleware `CheckFeatureActive` — blocca API se feature non attiva sul POS
 ⬜ Stripe Billing base
 ⬜ PWA: manifest.json + service worker + layout responsive mobile-first
 ⬜ Staging AWS attivo e testato (obbligatorio entro fine Fase 1)
@@ -198,13 +202,13 @@
 
 ## Prossimo task da eseguire
 
-**Continuare Fase 1 — Auth + RBAC + Device Sessions**
+**Continuare Fase 1 — WebSocket + Stripe Billing + PWA base**
 
 Prossimi task in ordine:
-1. **Auth endpoints** — `POST /api/auth/login` con selezione POS, `POST /api/auth/logout` via Sanctum
-2. **RBAC** — migrations `roles`, `permissions`, `user_pos_roles` + Spatie Permission con logica multi-POS + helper `userCan($permission, $pos_id)`
-3. **Device sessions** — migration `device_sessions` + middleware `EnforceSessionLimit` + API lista/invalidazione + WebSocket Soketi
-4. **Middleware CheckFeatureActive** — legge feature flags da POS e blocca API se add-on non attivo
+1. **WebSocket Soketi** — configurare Broadcasting, channel `session.{id}`, evento `SessionInvalidated`
+2. **Stripe Billing base** — `stripe/stripe-php`, migration `subscriptions`, webhook handler
+3. **PWA** — aggiornare `apps/web` con manifest, service worker, layout responsive mobile-first
+4. **Staging AWS** — CI/CD pipeline + EC2/RDS staging (obbligatorio entro fine Fase 1)
 
 ---
 

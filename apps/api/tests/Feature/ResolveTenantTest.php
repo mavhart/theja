@@ -82,6 +82,10 @@ class ResolveTenantTest extends TestCase
         $schema2 = 'tenant_' . str_replace('-', '', $org2->id);
 
         $res1 = $this->withToken($token1)->getJson('/api/tenant/schema');
+
+        // Reset auth guard cache per forzare una nuova autenticazione nella richiesta successiva
+        auth()->forgetGuards();
+
         $res2 = $this->withToken($token2)->getJson('/api/tenant/schema');
 
         $res1->assertOk();

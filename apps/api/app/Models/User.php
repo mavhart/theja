@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -35,10 +36,44 @@ class User extends Authenticatable
         ];
     }
 
-    // ─── Relazioni ────────────────────────────────────────────
+    // ─── Relazioni ────────────────────────────────────────────────────────────
 
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function posRoles(): HasMany
+    {
+        return $this->hasMany(UserPosRole::class);
+    }
+
+    public function deviceSessions(): HasMany
+    {
+        return $this->hasMany(DeviceSession::class);
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /** Restituisce i POS accessibili dall'utente (tramite user_pos_roles). */
+    public function accessiblePointsOfSale()
+    {
+        return PointOfSale::whereIn(
+            'id',
+            $this->posRoles()->pluck('pos_id')
+        )->where('is_active', true)->get();
+    }
+
+    /** Restituisce il DeviceSession attivo per il token corrente, oppure null. */
+    public function activeSessionForCurrentToken(): ?DeviceSession
+    {
+        $token = $this->currentAccessToken();
+        if (!$token || !$token->id) {
+            return null;
+        }
+
+        return DeviceSession::where('sanctum_token_id', $token->id)
+            ->where('is_active', true)
+            ->first();
     }
 }
