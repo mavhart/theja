@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-20 (sessione 5)
+> Aggiornato: 2026-03-20 (sessione 6)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -31,8 +31,8 @@
 ✅ .github/workflows/api-tests.yml — corretto per Laravel 11 + PHP 8.3 + PostgreSQL
 ✅ .github/workflows/web-tests.yml — corretto per pnpm 10 + @theja/web
 ✅ pnpm install dalla root verificato senza errori
-⬜ .github/workflows/deploy-staging.yml — NON fatto (staging AWS rimandato)
-⬜ Staging AWS (EC2, RDS, ElastiCache, S3) — NON fatto (rimandato intenzionalmente)
+✅ .github/workflows/deploy-staging.yml — workflow deploy SSH→EC2 (Job: deploy-api + deploy-web) — 2026-03-20
+🟡 Staging AWS (EC2, RDS, ElastiCache, S3) — file di configurazione pronti, risorse AWS da creare
 
 ---
 
@@ -94,7 +94,8 @@
 ✅ `StripeWebhookController`: POST /api/stripe/webhook (no auth, verifica firma HMAC) — 2026-03-20
 ✅ Gestione eventi webhook: subscription.updated/deleted, invoice.payment_failed/succeeded — 2026-03-20
 ✅ Feature test `StripeTest` (4 test: createCustomer mock, webhook update, firma invalida, header mancante) — 42/42 PASS — 2026-03-20
-⬜ Staging AWS attivo e testato (obbligatorio entro fine Fase 1)
+🟡 Staging AWS — `scripts/setup-staging-server.sh` (Ubuntu 24.04), `infra/nginx/staging-api.conf`, `infra/staging.env.example` — 2026-03-20
+⬜ Staging AWS — creazione risorse AWS reali (EC2, RDS, ElastiCache, S3, DNS, SSL) e primo deploy
 
 ---
 
@@ -226,11 +227,11 @@
 
 ## Prossimo task da eseguire
 
-**Completare Fase 1 — Staging AWS, poi Fase 2**
+**Completare Fase 1 — Creare risorse AWS staging, poi Fase 2**
 
 Prossimi task in ordine:
-1. **Staging AWS** — `.github/workflows/deploy-staging.yml`, EC2 + RDS + ElastiCache + S3 (obbligatorio entro fine Fase 1)
-2. **Fase 2** — Migrations `patients`, `prescriptions` + CRUD + GDPR consent (dopo completamento Fase 1)
+1. **Staging AWS — creazione risorse** — EC2 (Ubuntu 24.04), RDS PostgreSQL 16, ElastiCache Redis 7, S3 bucket, configurazione DNS + SSL, primo deploy manuale con `scripts/setup-staging-server.sh`
+2. **Fase 2** — Migrations `patients`, `prescriptions` + CRUD + GDPR consent (dopo staging live)
 
 ---
 

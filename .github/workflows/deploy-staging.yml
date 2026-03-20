@@ -1,0 +1,170 @@
+name: Deploy — Staging
+
+on:
+  push:
+    branches: [main]
+
+# Impedisce deploy paralleli in caso di push ravvicinati
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.3'
+  NODE_VERSION: '20'
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1 — Deploy Laravel API su EC2 staging
+  # ─────────────────────────────────────────────────────────────
+  deploy-api:
+    name: Deploy API → EC2 staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy API via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:        ${{ secrets.STAGING_EC2_HOST }}
+          username:    ${{ secrets.STAGING_EC2_USER }}
+          key:         ${{ secrets.STAGING_EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /var/www/theja
+
+            echo "→ Aggiorna codice"
+            git pull origin main
+
+            echo "→ Installa dipendenze PHP (no dev)"
+            cd apps/api
+            composer install \
+              --no-interaction \
+              --prefer-dist \
+              --optimize-autoloader \
+              --no-dev
+
+            echo "→ Esegui migrations"
+            php artisan migrate --force
+
+            echo "→ Ottimizza configurazione"
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            echo "→ Riavvia queue workers"
+            php artisan queue:restart
+
+            echo "→ Ricarica PHP-FPM"
+            sudo systemctl reload php8.3-fpm
+
+            echo "✓ API deploy completato"
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2 — Build e Deploy Next.js Web su EC2 staging
+  # ─────────────────────────────────────────────────────────────
+  deploy-web:
+    name: Deploy Web → EC2 staging
+    runs-on: ubuntu-latest
+    needs: deploy-api   # Prima l'API, poi il frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Installa dipendenze (root monorepo)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js (staging)
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL:       ${{ secrets.STAGING_API_URL }}
+          NEXT_PUBLIC_SOKETI_KEY:    ${{ secrets.STAGING_SOKETI_KEY }}
+          NEXT_PUBLIC_SOKETI_HOST:   ${{ secrets.STAGING_SOKETI_HOST }}
+          NEXT_PUBLIC_SOKETI_PORT:   ${{ secrets.STAGING_SOKETI_PORT }}
+        run: pnpm build
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_EC2_SSH_KEY }}" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -H "${{ secrets.STAGING_EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync build su EC2 via rsync
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/staging_key -o StrictHostKeyChecking=no" \
+            apps/web/.next/ \
+            ${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:/var/www/theja/apps/web/.next/
+
+          rsync -az \
+            -e "ssh -i ~/.ssh/staging_key -o StrictHostKeyChecking=no" \
+            apps/web/public/ \
+            ${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:/var/www/theja/apps/web/public/
+
+      - name: Riavvia Next.js via PM2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.STAGING_EC2_HOST }}
+          username: ${{ secrets.STAGING_EC2_USER }}
+          key:      ${{ secrets.STAGING_EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /var/www/theja/apps/web
+
+            # Copia i file di configurazione runtime (non inclusi nel build sync)
+            cp package.json .next/ 2>/dev/null || true
+
+            # Riavvia con PM2 (zero-downtime reload)
+            pm2 reload theja-web --update-env || pm2 start \
+              "node_modules/.bin/next start -p 3000" \
+              --name theja-web \
+              --cwd /var/www/theja/apps/web
+
+            echo "✓ Web deploy completato"
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3 — Notifica esito deploy
+  # ─────────────────────────────────────────────────────────────
+  notify:
+    name: Notifica esito
+    runs-on: ubuntu-latest
+    needs: [deploy-api, deploy-web]
+    if: always()
+
+    steps:
+      - name: Esito deploy
+        run: |
+          API_STATUS="${{ needs.deploy-api.result }}"
+          WEB_STATUS="${{ needs.deploy-web.result }}"
+          echo "API deploy: $API_STATUS"
+          echo "Web deploy: $WEB_STATUS"
+          if [ "$API_STATUS" != "success" ] || [ "$WEB_STATUS" != "success" ]; then
+            echo "::error::Deploy fallito — API: $API_STATUS, Web: $WEB_STATUS"
+            exit 1
+          fi
+          echo "✓ Staging deploy completato con successo"
+
+# ─────────────────────────────────────────────────────────────
+# GitHub Secrets necessari (impostare in Settings → Secrets → Actions):
+#
+#   STAGING_EC2_HOST       IP o hostname del server EC2 staging
+#   STAGING_EC2_USER       Utente SSH (es. ubuntu)
+#   STAGING_EC2_SSH_KEY    Chiave SSH privata (PEM) per accesso EC2
+#   STAGING_API_URL        URL pubblico API (es. https://api-staging.theja.it)
+#   STAGING_SOKETI_KEY     Chiave pubblica Soketi/Pusher staging
+#   STAGING_SOKETI_HOST    Hostname Soketi staging
+#   STAGING_SOKETI_PORT    Porta Soketi staging (es. 6001)
+# ─────────────────────────────────────────────────────────────
