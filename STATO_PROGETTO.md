@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-20 (sessione 3)
+> Aggiornato: 2026-03-20 (sessione 4)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -66,10 +66,23 @@
 ✅ DatabaseSeeder aggiornato con RolePermissionSeeder + user_pos_roles — 2026-03-20
 ✅ Feature test `AuthTest` (8 test) + `SessionTest` (7 test) — 30/30 PASS — 2026-03-20
 ✅ predis/predis installato (phpredis non disponibile su questa macchina dev) — 2026-03-20
-⬜ WebSocket Broadcasting (Soketi) — channel `session.{id}`
-⬜ Frontend: modale "Sessione attiva su [device] — vuoi spostarti qui?"
+✅ WebSocket Broadcasting: config/broadcasting.php + channels.php + middleware auth:sanctum — 2026-03-20
+✅ Evento `SessionInvalidated` (channel privato `session.{id}`, broadcastAs, broadcastWith) — 2026-03-20
+✅ SessionController@destroy + AuthController@logout con broadcast SessionInvalidated — 2026-03-20
+✅ pusher/pusher-php-server installato — 2026-03-20
+✅ Frontend: pusher-js + laravel-echo installati in apps/web — 2026-03-20
+✅ `lib/echo.ts` — singleton Laravel Echo per Soketi con auth Sanctum — 2026-03-20
+✅ `lib/api.ts` — client API tipizzato con helpers localStorage — 2026-03-20
+✅ `hooks/useSessionGuard.ts` — ascolta SessionInvalidated, redirect /login — 2026-03-20
+✅ `components/SessionInvalidatedModal.tsx` — modale 423 con scelta sessione da invalidare — 2026-03-20
+✅ `app/layout.tsx` aggiornato (metadata PWA, viewport, lang=it) — 2026-03-20
+✅ `components/layout/AppShell.tsx` — sidebar desktop + bottom nav mobile (PWA-ready) — 2026-03-20
+✅ `app/(dashboard)/layout.tsx` — layout auth con useSessionGuard + verifica token — 2026-03-20
+✅ `app/(dashboard)/page.tsx` — dashboard placeholder con 4 card statistiche — 2026-03-20
+✅ `app/login/page.tsx` — form login con selezione POS e gestione 423 — 2026-03-20
+✅ Feature test `BroadcastTest` (8 test: eventi, channel callback, auth endpoint) — 38/38 PASS — 2026-03-20
+✅ TypeScript type-check pulito (0 errori) — 2026-03-20
 ⬜ Stripe Billing base
-⬜ PWA: manifest.json + service worker + layout responsive mobile-first
 ⬜ Staging AWS attivo e testato (obbligatorio entro fine Fase 1)
 
 ---
@@ -202,13 +215,12 @@
 
 ## Prossimo task da eseguire
 
-**Continuare Fase 1 — WebSocket + Stripe Billing + PWA base**
+**Continuare Fase 1 — Stripe Billing + Staging AWS**
 
 Prossimi task in ordine:
-1. **WebSocket Soketi** — configurare Broadcasting, channel `session.{id}`, evento `SessionInvalidated`
-2. **Stripe Billing base** — `stripe/stripe-php`, migration `subscriptions`, webhook handler
-3. **PWA** — aggiornare `apps/web` con manifest, service worker, layout responsive mobile-first
-4. **Staging AWS** — CI/CD pipeline + EC2/RDS staging (obbligatorio entro fine Fase 1)
+1. **Stripe Billing base** — `stripe/stripe-php`, migration `subscriptions`, webhook handler `/api/stripe/webhook`
+2. **Staging AWS** — CI/CD pipeline + EC2/RDS staging (obbligatorio entro fine Fase 1)
+3. **Fase 2** — Migrations `patients`, `prescriptions` + CRUD + GDPR consent (dopo completamento Fase 1)
 
 ---
 

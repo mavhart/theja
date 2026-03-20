@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\SessionInvalidated;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Controller;
 use App\Models\DeviceSession;
@@ -145,8 +146,13 @@ class AuthController extends Controller
         $token = $user->currentAccessToken();
 
         if ($token) {
-            DeviceSession::where('sanctum_token_id', $token->id)
-                ->update(['is_active' => false]);
+            $session = DeviceSession::where('sanctum_token_id', $token->id)->first();
+
+            if ($session && $session->is_active) {
+                $session->update(['is_active' => false]);
+                // Notifica il client via WebSocket prima di revocare il token
+                broadcast(new SessionInvalidated($session, 'user_logged_out'));
+            }
 
             $token->delete();
         }

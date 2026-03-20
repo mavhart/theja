@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SessionInvalidated;
 use App\Models\DeviceSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,8 @@ class SessionController extends Controller
      * DELETE /api/sessions/{id}
      *
      * Invalida una sessione specifica (logout remoto).
-     * Revoca anche il token Sanctum associato.
+     * Revoca il token Sanctum associato e fa broadcast di SessionInvalidated
+     * sul channel privato session.{id} per notificare il client in tempo reale.
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
@@ -42,13 +44,16 @@ class SessionController extends Controller
 
         $session->update(['is_active' => false]);
 
-        // Revoca il token Sanctum associato per invalidare completamente la sessione
+        // Revoca il token Sanctum associato
         if ($session->sanctum_token_id) {
             $request->user()
                 ->tokens()
                 ->where('id', $session->sanctum_token_id)
                 ->delete();
         }
+
+        // Notifica il client remoto via WebSocket
+        broadcast(new SessionInvalidated($session, 'logged_out_remotely'));
 
         return response()->json(['message' => 'Sessione invalidata.']);
     }
