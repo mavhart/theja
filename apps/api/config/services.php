@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'key'     => env('STRIPE_KEY'),
+        'secret'  => env('STRIPE_SECRET'),
+        'webhook' => [
+            'secret'    => env('STRIPE_WEBHOOK_SECRET'),
+            'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
+        ],
+        'prices' => [
+            'base_per_pos'    => env('STRIPE_PRICE_BASE', 'price_base_per_pos'),
+            'session_addon'   => env('STRIPE_PRICE_SESSION_ADDON', 'price_session_addon'),
+            'ai_analysis'     => env('STRIPE_PRICE_AI_ANALYSIS', 'price_ai_analysis'),
+        ],
+    ],
+
 ];

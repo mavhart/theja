@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\CheckFeatureActive;
 use App\Http\Middleware\EnforceSessionLimit;
 use App\Http\Middleware\ResolveTenant;
@@ -21,6 +22,9 @@ use Illuminate\Support\Facades\Route;
 // ─── Pubbliche (nessuna auth) ─────────────────────────────────────────────────
 
 Route::get('/health', fn () => response()->json(['status' => 'ok', 'timestamp' => now()->toIso8601String()]));
+
+// Webhook Stripe — nessun middleware auth (Stripe usa firma HMAC, non token)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 // ─── Autenticazione ───────────────────────────────────────────────────────────
 

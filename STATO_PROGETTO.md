@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-20 (sessione 4)
+> Aggiornato: 2026-03-20 (sessione 5)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -82,7 +82,18 @@
 ✅ `app/login/page.tsx` — form login con selezione POS e gestione 423 — 2026-03-20
 ✅ Feature test `BroadcastTest` (8 test: eventi, channel callback, auth endpoint) — 38/38 PASS — 2026-03-20
 ✅ TypeScript type-check pulito (0 errori) — 2026-03-20
-⬜ Stripe Billing base
+✅ stripe/stripe-php v19 + @stripe/stripe-js v8 installati — 2026-03-20
+✅ Migration `subscriptions` (uuid PK, org FK, status enum, trial/period timestamps) — 2026-03-20
+✅ Migration `subscription_add_ons` (uuid PK, org/pos FK, feature_key, stripe_item_id) — 2026-03-20
+✅ Model `Subscription` (HasUuids, BelongsTo Org, isActive/isPastDue helpers) — 2026-03-20
+✅ Model `SubscriptionAddOn` (HasUuids, BelongsTo Org + POS) — 2026-03-20
+✅ Organization aggiornata con relazioni subscription() + subscriptionAddOns() — 2026-03-20
+✅ config/services.php con stripe.key/secret/webhook.secret/prices — 2026-03-20
+✅ apps/api/.env.example aggiornato con STRIPE_KEY/SECRET/WEBHOOK_SECRET/PRICES — 2026-03-20
+✅ `StripeService`: createCustomer, createSubscription, addAddon, cancelSubscription, syncFromWebhook — 2026-03-20
+✅ `StripeWebhookController`: POST /api/stripe/webhook (no auth, verifica firma HMAC) — 2026-03-20
+✅ Gestione eventi webhook: subscription.updated/deleted, invoice.payment_failed/succeeded — 2026-03-20
+✅ Feature test `StripeTest` (4 test: createCustomer mock, webhook update, firma invalida, header mancante) — 42/42 PASS — 2026-03-20
 ⬜ Staging AWS attivo e testato (obbligatorio entro fine Fase 1)
 
 ---
@@ -215,12 +226,11 @@
 
 ## Prossimo task da eseguire
 
-**Continuare Fase 1 — Stripe Billing + Staging AWS**
+**Completare Fase 1 — Staging AWS, poi Fase 2**
 
 Prossimi task in ordine:
-1. **Stripe Billing base** — `stripe/stripe-php`, migration `subscriptions`, webhook handler `/api/stripe/webhook`
-2. **Staging AWS** — CI/CD pipeline + EC2/RDS staging (obbligatorio entro fine Fase 1)
-3. **Fase 2** — Migrations `patients`, `prescriptions` + CRUD + GDPR consent (dopo completamento Fase 1)
+1. **Staging AWS** — `.github/workflows/deploy-staging.yml`, EC2 + RDS + ElastiCache + S3 (obbligatorio entro fine Fase 1)
+2. **Fase 2** — Migrations `patients`, `prescriptions` + CRUD + GDPR consent (dopo completamento Fase 1)
 
 ---
 
@@ -230,6 +240,6 @@ Prossimi task in ordine:
 |---|---|---|
 | Scelta provider RT Software certificato | Alta — serve per Fase 7 | Contattare Ditron e TeamSystem; raccogliere doc API entro Fase 3 |
 | Provider SMS (Twilio vs italiano) | Media — serve per Fase 6 | Valutare prezzi e compliance GDPR italiana |
-| Stripe vs alternativa per billing SaaS | Media — serve per Fase 1 | Stripe è assunto nel piano; confermare prima di implementare |
+| Stripe vs alternativa per billing SaaS | ✅ Deciso — Stripe | Implementato con stripe-php v19, webhook, subscriptions/add-ons |
 | Staging AWS: region eu-south-1 vs eu-west-1 | Alta — serve per Fase 1 | eu-south-1 (Milano) preferita per latenza Italia; verificare disponibilità servizi AWS |
 | Coverage minima CI (--min=80) | Bassa — riattivare dalla Fase 1+ | Attualmente disabilitata in api-tests.yml; riabilitare quando ci sono test reali |
