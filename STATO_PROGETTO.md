@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-20 (sessione 6)
+> Aggiornato: 2026-03-23 (sessione 7)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -11,7 +11,7 @@
 ---
 
 ## Fase 0 — Infrastruttura
-**Target: Settimane 1-2 | Stato: 🟡 In corso (95% completata)**
+**Target: Settimane 1-2 | Stato: ✅ Completata**
 
 ✅ Repository Git creato (github.com/mavhart/theja)
 ✅ Documentazione completa (README, THEJA_MASTER, ARCHITETTURA, MODELLO_COMMERCIALE, PIANO_SVILUPPO, ONBOARDING, CONTRIBUTING, ADR 000-006)
@@ -32,12 +32,12 @@
 ✅ .github/workflows/web-tests.yml — corretto per pnpm 10 + @theja/web
 ✅ pnpm install dalla root verificato senza errori
 ✅ .github/workflows/deploy-staging.yml — workflow deploy SSH→EC2 (Job: deploy-api + deploy-web) — 2026-03-20
-🟡 Staging AWS (EC2, RDS, ElastiCache, S3) — file di configurazione pronti, risorse AWS da creare
+✅ Staging AWS operativo — EC2 `15.160.218.142` (eu-south-1), RDS PostgreSQL 16, Redis locale EC2 — 2026-03-23
 
 ---
 
 ## Fase 1 — Fondamenta
-**Target: Settimane 3-4 | Stato: 🟡 In corso**
+**Target: Settimane 3-4 | Stato: ✅ Completata**
 
 ✅ Multi-tenant: migrations `organizations`, `points_of_sale` — 2026-03-20
 ✅ Migration users: aggiunto `organization_id` (uuid FK) e `is_active` — 2026-03-20
@@ -94,13 +94,15 @@
 ✅ `StripeWebhookController`: POST /api/stripe/webhook (no auth, verifica firma HMAC) — 2026-03-20
 ✅ Gestione eventi webhook: subscription.updated/deleted, invoice.payment_failed/succeeded — 2026-03-20
 ✅ Feature test `StripeTest` (4 test: createCustomer mock, webhook update, firma invalida, header mancante) — 42/42 PASS — 2026-03-20
-🟡 Staging AWS — `scripts/setup-staging-server.sh` (Ubuntu 24.04), `infra/nginx/staging-api.conf`, `infra/staging.env.example` — 2026-03-20
-⬜ Staging AWS — creazione risorse AWS reali (EC2, RDS, ElastiCache, S3, DNS, SSL) e primo deploy
+✅ Staging AWS — `scripts/setup-staging-server.sh`, `infra/nginx/staging-api.conf`, `infra/staging.env.example` — 2026-03-20
+✅ Staging AWS — EC2 `15.160.218.142` (eu-south-1), RDS PostgreSQL 16, Redis locale, deploy effettuato — 2026-03-23
+✅ API health check funzionante: `http://15.160.218.142/api/health` — 2026-03-23
+✅ 42/42 test PASS — Fase 1 completata al 100% — 2026-03-23
 
 ---
 
 ## Fase 2 — Core Pazienti e Clinica
-**Target: Settimane 5-7 | Stato: ⬜ Non iniziato**
+**Target: Settimane 5-7 | Stato: 🟡 In corso**
 
 ⬜ Migration `patients` + CRUD con GDPR consent
 ⬜ Ricerca paziente (nome, cognome, CF, telefono)
@@ -227,11 +229,14 @@
 
 ## Prossimo task da eseguire
 
-**Completare Fase 1 — Creare risorse AWS staging, poi Fase 2**
+**Fase 2 — Core Pazienti e Clinica**
 
 Prossimi task in ordine:
-1. **Staging AWS — creazione risorse** — EC2 (Ubuntu 24.04), RDS PostgreSQL 16, ElastiCache Redis 7, S3 bucket, configurazione DNS + SSL, primo deploy manuale con `scripts/setup-staging-server.sh`
-2. **Fase 2** — Migrations `patients`, `prescriptions` + CRUD + GDPR consent (dopo staging live)
+1. **Migration `patients`** — anagrafica, GDPR consent, ricerca full-text
+2. **Migration `prescriptions`** — storico evolutivo OD/OS, alert > 18 mesi
+3. **CRUD API pazienti + prescrizioni** — con API Resources, policy RBAC, test Feature
+4. **UI scheda paziente** — tab anagrafica / clinica / forniture / comunicazioni (Next.js)
+5. **OCR prescrizioni** — integrazione GPT-4o Vision API + revisione manuale
 
 ---
 
@@ -242,5 +247,5 @@ Prossimi task in ordine:
 | Scelta provider RT Software certificato | Alta — serve per Fase 7 | Contattare Ditron e TeamSystem; raccogliere doc API entro Fase 3 |
 | Provider SMS (Twilio vs italiano) | Media — serve per Fase 6 | Valutare prezzi e compliance GDPR italiana |
 | Stripe vs alternativa per billing SaaS | ✅ Deciso — Stripe | Implementato con stripe-php v19, webhook, subscriptions/add-ons |
-| Staging AWS: region eu-south-1 vs eu-west-1 | Alta — serve per Fase 1 | eu-south-1 (Milano) preferita per latenza Italia; verificare disponibilità servizi AWS |
+| Staging AWS: region eu-south-1 vs eu-west-1 | ✅ Deciso — eu-south-1 (Milano) | EC2 + RDS operativi in eu-south-1; ElastiCache rimandato a produzione |
 | Coverage minima CI (--min=80) | Bassa — riattivare dalla Fase 1+ | Attualmente disabilitata in api-tests.yml; riabilitare quando ci sono test reali |

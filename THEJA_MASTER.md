@@ -251,9 +251,24 @@ Invio corrispettivi giornalieri all'AdE: gestito dal provider certificato nella 
 
 | Ambiente | Scopo | Note |
 |---|---|---|
-| Local | Sviluppo quotidiano | Docker Compose |
-| Staging | Test con dati reali anonimi | AWS separato, attivo dalla Fase 1 |
-| Production | Clienti reali | AWS prod |
+| Local | Sviluppo quotidiano | Docker Compose (PostgreSQL 5434, Redis 6379, Soketi 6001) |
+| Staging | Test con dati reali anonimi | AWS eu-south-1 (Milano) — operativo dalla Fase 1 |
+| Production | Clienti reali | AWS prod — da configurare alla Fase 9 |
+
+### Staging — dettagli infrastruttura (operativo dal 2026-03-23)
+
+| Risorsa | Valore | Note |
+|---|---|---|
+| EC2 | `15.160.218.142` | Ubuntu 24.04, eu-south-1, PHP 8.4, Nginx, Composer |
+| RDS PostgreSQL | `theja-staging.cpei4y62e8yn.eu-south-1.rds.amazonaws.com` | PostgreSQL 16, porta 5432, VPC privata |
+| Redis | Locale su EC2 | Redis 7 installato sul server; ElastiCache rimandato a produzione |
+| API health check | `http://15.160.218.142/api/health` | Risponde `{"status":"ok"}` |
+| Regione AWS | `eu-south-1` (Milano) | Scelta per latenza Italia e compliance dati |
+| Deploy | GitHub Actions `deploy-staging.yml` | Trigger: push su `main` → SSH → git pull → migrate → cache |
+
+### Variabili d'ambiente staging
+Template: `infra/staging.env.example`
+File reale: `/var/www/theja/apps/api/.env` sul server EC2 (non versionato)
 
 Staging attivo dalla Fase 1, non alla Fase 9.
 I negozi del product owner sono il primo cliente staging.
