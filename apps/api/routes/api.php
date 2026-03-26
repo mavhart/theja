@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\LacExamController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\CheckFeatureActive;
@@ -55,7 +58,16 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
         Route::get('/ai/analyze', fn () => response()->json(['status' => 'ai_ready']));
     });
 
-    // ─── Future route tenant-aware (Fase 2+) ────────────────────────────────
-    // Route::apiResource('organizations', OrganizationController::class);
-    // Route::apiResource('points-of-sale', PointOfSaleController::class);
+    // ─── Pazienti, prescrizioni, LAC (Fase 2) ───────────────────────────────
+    Route::apiResource('patients', PatientController::class);
+
+    Route::get('/prescriptions', [PrescriptionController::class, 'index']);
+    Route::post('/prescriptions', [PrescriptionController::class, 'store']);
+    Route::get('/prescriptions/{prescription}', [PrescriptionController::class, 'show']);
+    Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update']);
+
+    Route::get('/lac-exams', [LacExamController::class, 'index']);
+    Route::post('/lac-exams', [LacExamController::class, 'store']);
+    Route::get('/lac-exams/{lacExam}', [LacExamController::class, 'show']);
+    Route::put('/lac-exams/{lacExam}', [LacExamController::class, 'update']);
 });

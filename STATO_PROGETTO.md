@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-23 (sessione 7)
+> Aggiornato: 2026-03-26 (sessione 8)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -104,10 +104,16 @@
 ## Fase 2 — Core Pazienti e Clinica
 **Target: Settimane 5-7 | Stato: 🟡 In corso**
 
-⬜ Migration `patients` + CRUD con GDPR consent
-⬜ Ricerca paziente (nome, cognome, CF, telefono)
-⬜ UI scheda paziente (tab: anagrafica / clinica / forniture / comunicazioni)
-⬜ Migration `prescriptions` + CRUD + storico evolutivo
+✅ Migration `patients` (schema tenant PostgreSQL, FK cross-schema verso org/POS/users) — 2026-03-26
+✅ Migration `prescriptions` (scheda optometria OD/OS × lontano/medio/vicino, visus, forie, IPD, richiami) — 2026-03-26
+✅ Migration `lac_exams` (scheda LAC OD/OS, `tabs_completed` jsonb) — 2026-03-26
+✅ `TenantClinicalSchema` + `OrganizationObserver` — provisioning schema tenant a ogni nuova Organization — 2026-03-26
+✅ Model `Patient`, `Prescription`, `LacExam` — cifratura Laravel `encrypted` su `fiscal_code` e `private_notes` — 2026-03-26
+✅ API: `PatientController`, `PrescriptionController`, `LacExamController` + Resources — route tenant-aware — 2026-03-26
+✅ Ricerca paziente `GET /api/patients?q=` (nome, cognome, cellulare, telefono, CF esatto se ≥11 caratteri) — 2026-03-26
+✅ `packages/shared` — tipi TypeScript `Patient`, `Prescription`, `LacExam` — 2026-03-26
+✅ Feature test `PatientTest` (5 test: creazione, ricerca, prescrizione, cross-POS, CF non in chiaro in DB) — 2026-03-26
+⬜ UI scheda paziente (tab: anagrafica / clinica / forniture / comunicazioni) — Next.js
 ⬜ Grafici progressione OD/OS nel tempo
 ⬜ Alert prescrizione > 18 mesi
 ⬜ Comparazione affiancata due prescrizioni
@@ -229,14 +235,12 @@
 
 ## Prossimo task da eseguire
 
-**Fase 2 — Core Pazienti e Clinica**
+**Fase 2 — Core Pazienti e Clinica (seguito)**
 
 Prossimi task in ordine:
-1. **Migration `patients`** — anagrafica, GDPR consent, ricerca full-text
-2. **Migration `prescriptions`** — storico evolutivo OD/OS, alert > 18 mesi
-3. **CRUD API pazienti + prescrizioni** — con API Resources, policy RBAC, test Feature
-4. **UI scheda paziente** — tab anagrafica / clinica / forniture / comunicazioni (Next.js)
-5. **OCR prescrizioni** — integrazione GPT-4o Vision API + revisione manuale
+1. **UI Next.js** — lista pazienti, scheda paziente (tab), form creazione/modifica collegati alle API
+2. **Policy RBAC** — permessi `patients.*` sulle route (opzionale: affinare con Spatie)
+3. **Grafici / alert / OCR / PDF** — come da elenco Fase 2 rimanente
 
 ---
 
