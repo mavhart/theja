@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-26 (sessione 8)
+> Aggiornato: 2026-03-26 (sessione 9)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -113,7 +113,11 @@
 ✅ Ricerca paziente `GET /api/patients?q=` (nome, cognome, cellulare, telefono, CF esatto se ≥11 caratteri) — 2026-03-26
 ✅ `packages/shared` — tipi TypeScript `Patient`, `Prescription`, `LacExam` — 2026-03-26
 ✅ Feature test `PatientTest` (5 test: creazione, ricerca, prescrizione, cross-POS, CF non in chiaro in DB) — 2026-03-26
-⬜ UI scheda paziente (tab: anagrafica / clinica / forniture / comunicazioni) — Next.js
+✅ API `GET /api/users?pos_id=` — utenti con ruolo sul POS (select operatore prescrizioni/LAC) — 2026-03-26
+✅ UI Next.js — `/pazienti` lista (ricerca debounce 300ms, paginazione 20, CF mascherato, skeleton) — 2026-03-26
+✅ UI Next.js — `/pazienti/nuovo` e `/pazienti/[id]` con tab Anagrafica / Optometria / LAC / Storico / Occhiali (placeholder Fase 4) — 2026-03-26
+✅ `PatientAnagraphicForm` + `PrescriptionForm` (validazione sfera/cilindro -30…+30 step 0,25) — 2026-03-26
+✅ `lib/api.ts` — `getPatients`, `getPatient`, `createPatient`, `updatePatient`, `getPrescriptions`, `createPrescription`, `updatePrescription`, `getLacExams`, `createLacExam`, `updateLacExam`, `getPosUsers`, `getStoredPosId` — 2026-03-26
 ⬜ Grafici progressione OD/OS nel tempo
 ⬜ Alert prescrizione > 18 mesi
 ⬜ Comparazione affiancata due prescrizioni

@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\LacExamController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\CheckFeatureActive;
@@ -59,6 +60,8 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     });
 
     // ─── Pazienti, prescrizioni, LAC (Fase 2) ───────────────────────────────
+    Route::get('/users', [UserController::class, 'index']);
+
     Route::apiResource('patients', PatientController::class);
 
     Route::get('/prescriptions', [PrescriptionController::class, 'index']);

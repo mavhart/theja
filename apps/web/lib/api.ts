@@ -56,11 +56,137 @@ export interface SessionLimitError {
   active_sessions: ActiveSession[];
 }
 
+/** Paziente — allineato a PatientResource Laravel */
+export interface ApiPatient {
+  id: string;
+  organization_id: string;
+  pos_id: string;
+  title?: string | null;
+  last_name: string;
+  first_name: string;
+  last_name2?: string | null;
+  gender?: string | null;
+  address?: string | null;
+  city?: string | null;
+  cap?: string | null;
+  province?: string | null;
+  country: string;
+  date_of_birth?: string | null;
+  place_of_birth?: string | null;
+  fiscal_code?: string | null;
+  vat_number?: string | null;
+  phone?: string | null;
+  phone2?: string | null;
+  mobile?: string | null;
+  fax?: string | null;
+  email?: string | null;
+  email_pec?: string | null;
+  fe_recipient_code?: string | null;
+  billing_address?: string | null;
+  billing_city?: string | null;
+  billing_cap?: string | null;
+  billing_province?: string | null;
+  billing_country?: string | null;
+  family_head_id?: string | null;
+  language: string;
+  profession?: string | null;
+  visual_problem?: string | null;
+  hobby?: string | null;
+  referral_source?: string | null;
+  referral_note?: string | null;
+  referred_by_patient_id?: string | null;
+  card_member: boolean;
+  uses_contact_lenses: boolean;
+  gdpr_consent_at?: string | null;
+  gdpr_marketing_consent: boolean;
+  gdpr_profiling_consent: boolean;
+  gdpr_model_printed?: string | null;
+  communication_sms: boolean;
+  communication_mail: boolean;
+  communication_letter: boolean;
+  notes?: string | null;
+  private_notes?: string | null;
+  inserted_by_user_id?: number | null;
+  inserted_at_pos_id?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ApiPatientPayload = Partial<Omit<ApiPatient, 'id' | 'created_at' | 'updated_at'>> & {
+  last_name?: string;
+  first_name?: string;
+};
+
+export interface LaravelPaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from?: number;
+  to?: number;
+}
+
+export interface PaginatedPatients {
+  data: ApiPatient[];
+  meta: LaravelPaginationMeta;
+  links: Record<string, string | null>;
+}
+
+export interface SinglePatientResponse {
+  data: ApiPatient;
+}
+
+/** Prescrizione optometrica (risposta API) */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ApiPrescription = Record<string, any>;
+
+export interface PaginatedPrescriptions {
+  data: ApiPrescription[];
+  meta: LaravelPaginationMeta;
+  links: Record<string, string | null>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ApiLacExam = Record<string, any>;
+
+export interface PaginatedLacExams {
+  data: ApiLacExam[];
+  meta: LaravelPaginationMeta;
+  links: Record<string, string | null>;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(STORAGE_TOKEN);
+}
+
+/** ID del POS attivo (da localStorage dopo select-pos). */
+export function getStoredPosId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_POS);
+    if (!raw) return null;
+    const pos = JSON.parse(raw) as ApiPointOfSale;
+    return pos.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export interface ApiPosUser {
+  id:    number;
+  name:  string;
+  email: string;
+}
+
+export async function getPosUsers(
+  posId?: string,
+): Promise<{ data: { data: ApiPosUser[] }; status: number }> {
+  const q = posId ? `?pos_id=${encodeURIComponent(posId)}` : '';
+  return apiRequest<{ data: ApiPosUser[] }>(`/users${q}`);
 }
 
 export function clearAuthStorage(): void {
@@ -97,6 +223,94 @@ async function apiRequest<T>(
   const data = await res.json().catch(() => ({}));
 
   return { data: data as T, status: res.status };
+}
+
+export async function getPatients(
+  search: string,
+  page: number,
+): Promise<{ data: PaginatedPatients; status: number }> {
+  const q = new URLSearchParams({ page: String(page), per_page: '20' });
+  if (search.trim()) q.set('q', search.trim());
+  return apiRequest<PaginatedPatients>(`/patients?${q.toString()}`);
+}
+
+export async function getPatient(id: string): Promise<{ data: SinglePatientResponse; status: number }> {
+  return apiRequest<SinglePatientResponse>(`/patients/${id}`);
+}
+
+export async function createPatient(
+  payload: ApiPatientPayload,
+): Promise<{ data: SinglePatientResponse; status: number }> {
+  return apiRequest<SinglePatientResponse>('/patients', {
+    method: 'POST',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function updatePatient(
+  id: string,
+  payload: ApiPatientPayload,
+): Promise<{ data: SinglePatientResponse; status: number }> {
+  return apiRequest<SinglePatientResponse>(`/patients/${id}`, {
+    method: 'PUT',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function getPrescriptions(
+  patientId: string,
+  page = 1,
+): Promise<{ data: PaginatedPrescriptions; status: number }> {
+  const q = new URLSearchParams({ patient_id: patientId, per_page: '50', page: String(page) });
+  return apiRequest<PaginatedPrescriptions>(`/prescriptions?${q.toString()}`);
+}
+
+export async function createPrescription(
+  patientId: string,
+  payload: Record<string, unknown>,
+): Promise<{ data: { data: ApiPrescription }; status: number }> {
+  return apiRequest<{ data: ApiPrescription }>('/prescriptions', {
+    method: 'POST',
+    body:   JSON.stringify({ patient_id: patientId, ...payload }),
+  });
+}
+
+export async function updatePrescription(
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<{ data: { data: ApiPrescription }; status: number }> {
+  return apiRequest<{ data: ApiPrescription }>(`/prescriptions/${id}`, {
+    method: 'PUT',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function getLacExams(
+  patientId: string,
+  page = 1,
+): Promise<{ data: PaginatedLacExams; status: number }> {
+  const q = new URLSearchParams({ patient_id: patientId, per_page: '50', page: String(page) });
+  return apiRequest<PaginatedLacExams>(`/lac-exams?${q.toString()}`);
+}
+
+export async function createLacExam(
+  patientId: string,
+  payload: Record<string, unknown>,
+): Promise<{ data: { data: ApiLacExam }; status: number }> {
+  return apiRequest<{ data: ApiLacExam }>('/lac-exams', {
+    method: 'POST',
+    body:   JSON.stringify({ patient_id: patientId, ...payload }),
+  });
+}
+
+export async function updateLacExam(
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<{ data: { data: ApiLacExam }; status: number }> {
+  return apiRequest<{ data: ApiLacExam }>(`/lac-exams/${id}`, {
+    method: 'PUT',
+    body:   JSON.stringify(payload),
+  });
 }
 
 export const api = {
