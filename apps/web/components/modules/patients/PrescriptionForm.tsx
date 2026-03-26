@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import type { ApiPosUser } from '@/lib/api';
+import { scanPrescriptionOcr, type ApiPosUser } from '@/lib/api';
 
 const DISTANCES = ['far', 'medium', 'near'] as const;
 const DIST_LABEL: Record<(typeof DISTANCES)[number], string> = {
@@ -11,9 +11,8 @@ const DIST_LABEL: Record<(typeof DISTANCES)[number], string> = {
   near:   'Vicino',
 };
 
-type Eye = 'od' | 'os';
-
 export interface PrescriptionFormProps {
+  patientId: string;
   initial?: Record<string, unknown> | null;
   posUsers: ApiPosUser[];
   onSubmit: (payload: Record<string, unknown>) => Promise<void> | void;
@@ -58,6 +57,7 @@ function buildEmptyRow(): Record<string, string> {
 }
 
 export default function PrescriptionForm({
+  patientId,
   initial,
   posUsers,
   onSubmit,
@@ -100,10 +100,67 @@ export default function PrescriptionForm({
   );
   const [notes, setNotes] = useState(String(initial?.notes ?? ''));
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [ocrFlags, setOcrFlags] = useState<Record<string, boolean>>({});
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const setCell = (key: string, value: string) => {
     setRowStrings((prev) => ({ ...prev, [key]: value }));
+    setOcrFlags((prev) => {
+      if (!prev[key]) return prev;
+      const { [key]: _removed, ...rest } = prev;
+      return rest;
+    });
   };
+
+  async function handleOcrFile(file: File) {
+    setFieldError(null);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result ?? '');
+      setOcrBusy(true);
+      try {
+        const { data: outer, status } = await scanPrescriptionOcr(patientId, dataUrl);
+        if (status === 401) {
+          setFieldError('Sessione scaduta.');
+          return;
+        }
+        if (status !== 200) {
+          const msg = (outer as unknown as { message?: string }).message;
+          setFieldError(msg ?? 'OCR non riuscito.');
+          return;
+        }
+        const o = outer.data;
+        const entries: [string, number | null | undefined][] = [
+          ['od_sphere_far', o.od_sphere_far],
+          ['os_sphere_far', o.os_sphere_far],
+          ['od_cylinder_far', o.od_cylinder_far],
+          ['os_cylinder_far', o.os_cylinder_far],
+          ['od_axis_far', o.od_axis_far],
+          ['os_axis_far', o.os_axis_far],
+          ['od_addition_far', o.od_addition_far],
+          ['os_addition_far', o.os_addition_far],
+        ];
+        const newFlags: Record<string, boolean> = {};
+        setRowStrings((prev) => {
+          const next = { ...prev };
+          for (const [k, v] of entries) {
+            if (v != null) {
+              next[k] = String(v);
+              newFlags[k] = true;
+            }
+          }
+          return next;
+        });
+        setOcrFlags((prev) => ({ ...prev, ...newFlags }));
+      } catch {
+        setFieldError('Errore durante la scansione.');
+      } finally {
+        setOcrBusy(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   const payload = useMemo(() => {
     const out: Record<string, unknown> = {
@@ -200,6 +257,29 @@ export default function PrescriptionForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handleOcrFile(f);
+            e.target.value = '';
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          disabled={ocrBusy || submitting}
+          onClick={() => fileRef.current?.click()}
+        >
+          {ocrBusy ? 'Lettura…' : 'Scansiona ricetta'}
+        </Button>
+        <span className="text-xs text-muted-foreground">Carica una foto della ricetta: i campi lontano verranno precompilati.</span>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="flex flex-col gap-1">
           <span className="text-muted-foreground">Data visita *</span>
@@ -258,7 +338,14 @@ export default function PrescriptionForm({
                     ] as const
                   ).map(([label, key, kind]) => (
                     <label key={key} className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                      <span className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+                        {label}
+                        {ocrFlags[key] && (
+                          <span className="rounded bg-amber-100 px-1 py-0 text-[9px] font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                            Verificare
+                          </span>
+                        )}
+                      </span>
                       <input
                         type={kind === 'number' ? 'number' : 'text'}
                         {...(kind === 'number'

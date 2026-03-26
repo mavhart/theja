@@ -13,6 +13,29 @@ function fullName(p: ApiPatient): string {
   return [p.last_name, p.first_name, p.last_name2].filter(Boolean).join(' ');
 }
 
+function PrescriptionAlertBadge({ alert }: { alert?: ApiPatient['prescription_alert'] }) {
+  const a = alert ?? 'none';
+  if (a === 'none') {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:text-emerald-200">
+        In regola
+      </span>
+    );
+  }
+  if (a === 'warning') {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-900 dark:text-amber-100">
+        Revisione
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-800 dark:text-red-200">
+      Scaduta
+    </span>
+  );
+}
+
 function TableSkeleton() {
   return (
     <div className="animate-pulse space-y-2">
@@ -138,7 +161,12 @@ export default function PazientiListPage() {
                   }}
                   className="cursor-pointer border-b border-border/60 transition-colors hover:bg-muted/50"
                 >
-                  <td className="px-4 py-3 font-medium text-foreground">{fullName(p)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-foreground">{fullName(p)}</span>
+                      <PrescriptionAlertBadge alert={p.prescription_alert} />
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDateIt(p.date_of_birth)}</td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{maskFiscalCode(p.fiscal_code)}</td>
                   <td className="px-4 py-3">{p.mobile ?? '—'}</td>

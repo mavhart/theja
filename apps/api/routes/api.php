@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\ClinicalPdfController;
 use App\Http\Controllers\LacExamController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PrescriptionOcrController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SessionController;
@@ -63,6 +65,10 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::get('/users', [UserController::class, 'index']);
 
     Route::apiResource('patients', PatientController::class);
+
+    Route::post('patients/{patient}/prescriptions/ocr', [PrescriptionOcrController::class, 'store']);
+    Route::get('patients/{patient}/prescriptions/{prescription}/pdf', [ClinicalPdfController::class, 'prescriptionPdf']);
+    Route::get('patients/{patient}/lac-exams/{lacExam}/pdf', [ClinicalPdfController::class, 'lacExamPdf']);
 
     Route::get('/prescriptions', [PrescriptionController::class, 'index']);
     Route::post('/prescriptions', [PrescriptionController::class, 'store']);

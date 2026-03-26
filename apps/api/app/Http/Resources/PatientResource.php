@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\PrescriptionAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,10 @@ class PatientResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $latest = $this->relationLoaded('latestPrescription')
+            ? $this->latestPrescription
+            : $this->latestPrescription()->first();
+
         return [
             'id'                         => $this->id,
             'organization_id'            => $this->organization_id,
@@ -66,6 +71,8 @@ class PatientResource extends JsonResource
             'is_active'                  => $this->is_active,
             'created_at'                 => $this->created_at?->toIso8601String(),
             'updated_at'                 => $this->updated_at?->toIso8601String(),
+            'prescription_alert'         => PrescriptionAlertService::resolve($latest),
+            'last_prescription_visit_date' => $latest?->visit_date?->format('Y-m-d'),
         ];
     }
 }

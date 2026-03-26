@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import PatientAnagraphicForm from '@/components/modules/patients/PatientAnagraphicForm';
+import PrescriptionChart from '@/components/modules/patients/PrescriptionChart';
 import PrescriptionForm from '@/components/modules/patients/PrescriptionForm';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,9 @@ import { formatDateIt } from '@/lib/patient-utils';
 import {
   createLacExam,
   createPrescription,
+  downloadPdfFromBase64,
+  fetchLacExamPdf,
+  fetchPrescriptionPdf,
   getLacExams,
   getPatient,
   getPosUsers,
@@ -178,6 +182,7 @@ export default function PazienteDetailPage() {
 
   const [lacModal, setLacModal] = useState<{ mode: 'create' } | { mode: 'edit'; item: ApiLacExam } | null>(null);
   const [lacSaving, setLacSaving] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     if (!id) return;
@@ -258,8 +263,31 @@ export default function PazienteDetailPage() {
       setRxModal(null);
       const r = await getPrescriptions(id);
       if (r.status === 200) setPrescriptions(r.data.data ?? []);
+      const pu = await getPatient(id);
+      if (pu.status === 200 && pu.data.data) setPatient(pu.data.data);
     } finally {
       setRxSaving(false);
+    }
+  }
+
+  async function handleDownloadPrescriptionPdf(rxId: string, type: 'referto' | 'certificato') {
+    const key = `${rxId}-${type}`;
+    setPdfBusy(key);
+    try {
+      const { data, status } = await fetchPrescriptionPdf(id, rxId, type);
+      if (status === 200) downloadPdfFromBase64(data.filename, data.pdf_base64);
+    } finally {
+      setPdfBusy(null);
+    }
+  }
+
+  async function handleDownloadLacPdf(examId: string) {
+    setPdfBusy(`lac-${examId}`);
+    try {
+      const { data, status } = await fetchLacExamPdf(id, examId);
+      if (status === 200) downloadPdfFromBase64(data.filename, data.pdf_base64);
+    } finally {
+      setPdfBusy(null);
     }
   }
 
@@ -364,6 +392,27 @@ export default function PazienteDetailPage() {
 
       {tab === 'optometria' && (
         <div className="space-y-4">
+          {(patient.prescription_alert === 'warning' || patient.prescription_alert === 'expired') && (
+            <div
+              className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+                patient.prescription_alert === 'expired'
+                  ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30'
+                  : 'border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30'
+              }`}
+            >
+              <p className="text-sm text-foreground">
+                Prescrizione del{' '}
+                <strong>{formatDateIt(patient.last_prescription_visit_date)}</strong> — potrebbe necessitare
+                revisione.
+              </p>
+              <Button type="button" variant="outline" size="sm" disabled title="Disponibile dalla Fase agenda">
+                Prenota visita
+              </Button>
+            </div>
+          )}
+
+          <PrescriptionChart prescriptions={prescriptions} />
+
           <div className="flex justify-end">
             <Button type="button" onClick={() => setRxModal({ mode: 'create' })}>
               Nuova prescrizione
@@ -375,11 +424,12 @@ export default function PazienteDetailPage() {
             <ul className="divide-y divide-border rounded-xl border border-border bg-card">
               {prescriptions.map((p) => {
                 const s = prescriptionSummary(p);
+                const rid = String(p.id);
                 return (
-                  <li key={String(p.id)}>
+                  <li key={rid} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <button
                       type="button"
-                      className="flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                      className="min-w-0 flex-1 text-left text-sm transition-colors hover:opacity-80"
                       onClick={() => setRxModal({ mode: 'edit', item: p })}
                     >
                       <div>
@@ -389,10 +439,36 @@ export default function PazienteDetailPage() {
                           {p.next_recall_reason ? ` (${String(p.next_recall_reason)})` : ''}
                         </span>
                       </div>
-                      <div className="font-mono text-xs text-muted-foreground">
+                      <div className="mt-1 font-mono text-xs text-muted-foreground">
                         OD {s.od} · OS {s.os}
                       </div>
                     </button>
+                    <div className="flex shrink-0 flex-wrap gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={pdfBusy !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDownloadPrescriptionPdf(rid, 'referto');
+                        }}
+                      >
+                        PDF referto
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={pdfBusy !== null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDownloadPrescriptionPdf(rid, 'certificato');
+                        }}
+                      >
+                        PDF certificato
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
@@ -412,20 +488,36 @@ export default function PazienteDetailPage() {
             <p className="text-sm text-muted-foreground">Nessun esame LAC registrato.</p>
           ) : (
             <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-              {lacExams.map((e) => (
-                <li key={String(e.id)}>
-                  <button
-                    type="button"
-                    className="flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
-                    onClick={() => setLacModal({ mode: 'edit', item: e })}
-                  >
-                    <span className="font-medium">{formatDateIt(e.exam_date as string)}</span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      OD R1 {e.od_r1 ?? '—'} / R2 {e.od_r2 ?? '—'} · OS R1 {e.os_r1 ?? '—'} / R2 {e.os_r2 ?? '—'}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {lacExams.map((e) => {
+                const eid = String(e.id);
+                return (
+                  <li key={eid} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left text-sm transition-colors hover:opacity-80"
+                      onClick={() => setLacModal({ mode: 'edit', item: e })}
+                    >
+                      <span className="font-medium">{formatDateIt(e.exam_date as string)}</span>
+                      <span className="mt-1 block font-mono text-xs text-muted-foreground">
+                        OD R1 {e.od_r1 ?? '—'} / R2 {e.od_r2 ?? '—'} · OS R1 {e.os_r1 ?? '—'} / R2 {e.os_r2 ?? '—'}
+                      </span>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={pdfBusy !== null}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        void handleDownloadLacPdf(eid);
+                      }}
+                    >
+                      Scarica PDF
+                    </Button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -455,6 +547,7 @@ export default function PazienteDetailPage() {
               </Button>
             </div>
             <PrescriptionForm
+              patientId={id}
               initial={rxModal.mode === 'edit' ? rxModal.item : null}
               posUsers={posUsers}
               submitting={rxSaving}

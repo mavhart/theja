@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-26 (sessione 9)
+> Aggiornato: 2026-03-26 (sessione 10)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -102,7 +102,7 @@
 ---
 
 ## Fase 2 — Core Pazienti e Clinica
-**Target: Settimane 5-7 | Stato: 🟡 In corso**
+**Target: Settimane 5-7 | Stato: ✅ Completata (core clinico + UI)**
 
 ✅ Migration `patients` (schema tenant PostgreSQL, FK cross-schema verso org/POS/users) — 2026-03-26
 ✅ Migration `prescriptions` (scheda optometria OD/OS × lontano/medio/vicino, visus, forie, IPD, richiami) — 2026-03-26
@@ -117,12 +117,16 @@
 ✅ UI Next.js — `/pazienti` lista (ricerca debounce 300ms, paginazione 20, CF mascherato, skeleton) — 2026-03-26
 ✅ UI Next.js — `/pazienti/nuovo` e `/pazienti/[id]` con tab Anagrafica / Optometria / LAC / Storico / Occhiali (placeholder Fase 4) — 2026-03-26
 ✅ `PatientAnagraphicForm` + `PrescriptionForm` (validazione sfera/cilindro -30…+30 step 0,25) — 2026-03-26
-✅ `lib/api.ts` — `getPatients`, `getPatient`, `createPatient`, `updatePatient`, `getPrescriptions`, `createPrescription`, `updatePrescription`, `getLacExams`, `createLacExam`, `updateLacExam`, `getPosUsers`, `getStoredPosId` — 2026-03-26
-⬜ Grafici progressione OD/OS nel tempo
-⬜ Alert prescrizione > 18 mesi
+✅ `lib/api.ts` — client pazienti/prescrizioni/LAC/POS + OCR + download PDF — 2026-03-26
+✅ `PatientResource` — `prescription_alert` (none/warning/expired) + `last_prescription_visit_date` — 2026-03-26
+✅ `PrescriptionAlertService` — regole 12/18 mesi e richiamo scaduto — 2026-03-26
+✅ UI — badge alert in lista pazienti; banner tab Optometria + pulsante Prenota visita (placeholder) — 2026-03-26
+✅ `PrescriptionChart` (recharts) — progressione sfera/cilindro OD/OS lontano, tooltip prescrizione completa — 2026-03-26
+✅ `OcrService` + `POST /api/patients/{patient}/prescriptions/ocr` (GPT-4o Vision, `OPENAI_API_KEY`) — 2026-03-26
+✅ `PdfService` (barryvdh/laravel-dompdf) + Blade `pdf/referto_visita`, `pdf/scheda_lac`, `pdf/certificato_idoneita` — 2026-03-26
+✅ `GET .../prescriptions/{id}/pdf?type=referto|certificato` + `GET .../lac-exams/{id}/pdf` — 2026-03-26
+✅ Test unit `PrescriptionAlertServiceTest` + feature `ClinicalPatientFeaturesTest` (OCR mock, PDF base64) — 2026-03-26
 ⬜ Comparazione affiancata due prescrizioni
-⬜ OCR prescrizioni (GPT-4o Vision API) + revisione manuale
-⬜ PDF: referto visita, scheda LAC, certificato idoneità visiva
 ⬜ Data model app paziente (senza UI — solo struttura per futuro)
 
 ---

@@ -26,7 +26,10 @@ class PatientController extends Controller
         $perPage = min((int) $request->input('per_page', 15), 100);
 
         return PatientResource::collection(
-            $query->orderBy('last_name')->orderBy('first_name')->paginate($perPage)
+            $query->with('latestPrescription')
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->paginate($perPage)
         );
     }
 
@@ -49,14 +52,14 @@ class PatientController extends Controller
             'inserted_at_pos_id'      => $posId,
         ]));
 
-        return (new PatientResource($patient))
+        return (new PatientResource($patient->load('latestPrescription')))
             ->response()
             ->setStatusCode(201);
     }
 
     public function show(Request $request, Patient $patient): PatientResource
     {
-        return new PatientResource($patient);
+        return new PatientResource($patient->load('latestPrescription'));
     }
 
     public function update(Request $request, Patient $patient): PatientResource
@@ -67,7 +70,7 @@ class PatientController extends Controller
         }
         $patient->update($data);
 
-        return new PatientResource($patient->fresh());
+        return new PatientResource($patient->fresh()->load('latestPrescription'));
     }
 
     public function destroy(Request $request, Patient $patient): JsonResponse

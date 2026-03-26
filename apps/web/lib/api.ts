@@ -111,6 +111,9 @@ export interface ApiPatient {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+  /** Calcolato lato API dall'ultima visita / richiamo */
+  prescription_alert?: 'none' | 'warning' | 'expired';
+  last_prescription_visit_date?: string | null;
 }
 
 export type ApiPatientPayload = Partial<Omit<ApiPatient, 'id' | 'created_at' | 'updated_at'>> & {
@@ -293,6 +296,19 @@ export async function getLacExams(
   return apiRequest<PaginatedLacExams>(`/lac-exams?${q.toString()}`);
 }
 
+/** Valori estratti da OCR (campi lontano + confidence). */
+export interface OcrPrescriptionResult {
+  od_sphere_far: number | null;
+  os_sphere_far: number | null;
+  od_cylinder_far: number | null;
+  os_cylinder_far: number | null;
+  od_axis_far: number | null;
+  os_axis_far: number | null;
+  od_addition_far: number | null;
+  os_addition_far: number | null;
+  confidence: 'high' | 'medium' | 'low';
+}
+
 export async function createLacExam(
   patientId: string,
   payload: Record<string, unknown>,
@@ -311,6 +327,53 @@ export async function updateLacExam(
     method: 'PUT',
     body:   JSON.stringify(payload),
   });
+}
+
+export interface PdfDownloadResponse {
+  filename:   string;
+  pdf_base64: string;
+}
+
+export async function scanPrescriptionOcr(
+  patientId: string,
+  imageBase64: string,
+): Promise<{ data: { data: OcrPrescriptionResult }; status: number }> {
+  return apiRequest<{ data: OcrPrescriptionResult }>(`/patients/${patientId}/prescriptions/ocr`, {
+    method: 'POST',
+    body:   JSON.stringify({ image_base64: imageBase64 }),
+  });
+}
+
+export async function fetchPrescriptionPdf(
+  patientId: string,
+  prescriptionId: string,
+  type: 'referto' | 'certificato',
+): Promise<{ data: PdfDownloadResponse; status: number }> {
+  const q = new URLSearchParams({ type });
+  return apiRequest<PdfDownloadResponse>(
+    `/patients/${patientId}/prescriptions/${prescriptionId}/pdf?${q.toString()}`,
+  );
+}
+
+export async function fetchLacExamPdf(
+  patientId: string,
+  examId: string,
+): Promise<{ data: PdfDownloadResponse; status: number }> {
+  return apiRequest<PdfDownloadResponse>(`/patients/${patientId}/lac-exams/${examId}/pdf`);
+}
+
+/** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */
+export function downloadPdfFromBase64(filename: string, pdfBase64: string): void {
+  const bin = atob(pdfBase64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export const api = {
