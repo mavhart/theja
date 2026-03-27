@@ -334,6 +334,129 @@ export interface PdfDownloadResponse {
   pdf_base64: string;
 }
 
+export type ProductCategory =
+  | 'montatura'
+  | 'lente_oftalmica'
+  | 'lente_contatto'
+  | 'liquido_accessorio'
+  | 'servizio';
+
+export interface ApiSupplier {
+  id: string;
+  organization_id: string;
+  type: 'azienda' | 'persona';
+  company_name?: string | null;
+  last_name?: string | null;
+  first_name?: string | null;
+  code?: string | null;
+  city?: string | null;
+  phone?: string | null;
+  categories?: string[];
+  is_active: boolean;
+  [key: string]: unknown;
+}
+
+export interface ApiProduct {
+  id: string;
+  organization_id: string;
+  supplier_id?: string | null;
+  category: ProductCategory;
+  barcode?: string | null;
+  sku?: string | null;
+  internal_code?: string | null;
+  personal_code?: string | null;
+  brand?: string | null;
+  line?: string | null;
+  model?: string | null;
+  color?: string | null;
+  material?: string | null;
+  lens_type?: string | null;
+  lens_color?: string | null;
+  user_type?: string | null;
+  mounting_type?: string | null;
+  caliber?: number | null;
+  bridge?: number | null;
+  temple?: number | null;
+  is_polarized: boolean;
+  is_ce: boolean;
+  attributes?: Record<string, unknown> | null;
+  purchase_price?: string | number | null;
+  markup_percent?: string | number | null;
+  net_price?: string | number | null;
+  list_price?: string | number | null;
+  sale_price?: string | number | null;
+  vat_code?: string | null;
+  vat_rate?: string | number | null;
+  inserted_at?: string | null;
+  date_start?: string | null;
+  date_end?: string | null;
+  customs_code?: string | null;
+  notes?: string | null;
+  is_active: boolean;
+  supplier?: ApiSupplier | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ApiProductPayload = Partial<Omit<ApiProduct, 'id' | 'created_at' | 'updated_at'>>;
+export type ApiSupplierPayload = Partial<Omit<ApiSupplier, 'id'>>;
+
+export interface ApiInventoryStockItem {
+  id: string;
+  pos_id: string;
+  product_id: string;
+  quantity: number;
+  quantity_arriving: number;
+  quantity_reserved: number;
+  quantity_sold: number;
+  min_stock: number;
+  max_stock: number;
+  location?: string | null;
+  product?: ApiProduct;
+  pos_name?: string;
+}
+
+export interface ApiStockMovement {
+  id: string;
+  pos_id: string;
+  product_id: string;
+  user_id?: number | null;
+  type: string;
+  quantity: number;
+  quantity_before: number;
+  quantity_after: number;
+  ddt_number?: string | null;
+  ddt_date?: string | null;
+  reference?: string | null;
+  purchase_price?: number | null;
+  sale_price?: number | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface ApiLacSchedule {
+  id: string;
+  patient_id: string;
+  product_id: string;
+  patient_name?: string;
+  product_name?: string;
+  estimated_end_date: string;
+  days_remaining?: number;
+  [key: string]: unknown;
+}
+
+export interface GetProductsParams {
+  q?: string;
+  category?: ProductCategory | 'all';
+  page?: number;
+}
+
+export interface GetSuppliersParams {
+  q?: string;
+  category?: string;
+  page?: number;
+}
+
 export async function scanPrescriptionOcr(
   patientId: string,
   imageBase64: string,
@@ -360,6 +483,105 @@ export async function fetchLacExamPdf(
   examId: string,
 ): Promise<{ data: PdfDownloadResponse; status: number }> {
   return apiRequest<PdfDownloadResponse>(`/patients/${patientId}/lac-exams/${examId}/pdf`);
+}
+
+export async function getProducts(
+  params: GetProductsParams = {},
+): Promise<{ data: { data: ApiProduct[]; meta: LaravelPaginationMeta; links: Record<string, string | null> }; status: number }> {
+  const q = new URLSearchParams({
+    page: String(params.page ?? 1),
+    per_page: '20',
+  });
+  if (params.q?.trim()) q.set('q', params.q.trim());
+  if (params.category && params.category !== 'all') q.set('category', params.category);
+  return apiRequest<{ data: ApiProduct[]; meta: LaravelPaginationMeta; links: Record<string, string | null> }>(
+    `/products?${q.toString()}`,
+  );
+}
+
+export async function getProduct(
+  id: string,
+): Promise<{ data: { data: ApiProduct }; status: number }> {
+  return apiRequest<{ data: ApiProduct }>(`/products/${id}`);
+}
+
+export async function createProduct(
+  payload: ApiProductPayload,
+): Promise<{ data: { data: ApiProduct }; status: number }> {
+  return apiRequest<{ data: ApiProduct }>('/products', {
+    method: 'POST',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function updateProduct(
+  id: string,
+  payload: ApiProductPayload,
+): Promise<{ data: { data: ApiProduct }; status: number }> {
+  return apiRequest<{ data: ApiProduct }>(`/products/${id}`, {
+    method: 'PUT',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function getSuppliers(
+  params: GetSuppliersParams = {},
+): Promise<{ data: { data: ApiSupplier[]; meta: LaravelPaginationMeta; links: Record<string, string | null> }; status: number }> {
+  const q = new URLSearchParams({
+    page: String(params.page ?? 1),
+    per_page: '20',
+  });
+  if (params.q?.trim()) q.set('q', params.q.trim());
+  if (params.category?.trim()) q.set('category', params.category.trim());
+  return apiRequest<{ data: ApiSupplier[]; meta: LaravelPaginationMeta; links: Record<string, string | null> }>(
+    `/suppliers?${q.toString()}`,
+  );
+}
+
+export async function getSupplier(
+  id: string,
+): Promise<{ data: { data: ApiSupplier }; status: number }> {
+  return apiRequest<{ data: ApiSupplier }>(`/suppliers/${id}`);
+}
+
+export async function createSupplier(
+  payload: ApiSupplierPayload,
+): Promise<{ data: { data: ApiSupplier }; status: number }> {
+  return apiRequest<{ data: ApiSupplier }>('/suppliers', {
+    method: 'POST',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function getInventoryStock(
+  productId: string,
+): Promise<{ data: { data: ApiInventoryStockItem[] }; status: number }> {
+  const q = new URLSearchParams({ product_id: productId });
+  return apiRequest<{ data: ApiInventoryStockItem[] }>(`/inventory?${q.toString()}`);
+}
+
+export async function createStockMovement(
+  payload: Record<string, unknown>,
+): Promise<{ data: { data: ApiStockMovement }; status: number }> {
+  return apiRequest<{ data: ApiStockMovement }>('/stock-movements', {
+    method: 'POST',
+    body:   JSON.stringify(payload),
+  });
+}
+
+export async function getStockMovements(
+  productId: string,
+): Promise<{ data: { data: ApiStockMovement[]; meta?: LaravelPaginationMeta }; status: number }> {
+  const q = new URLSearchParams({ product_id: productId, per_page: '50' });
+  return apiRequest<{ data: ApiStockMovement[]; meta?: LaravelPaginationMeta }>(`/stock-movements?${q.toString()}`);
+}
+
+export async function getLacSchedules(
+  params: { expiring_days?: number } = {},
+): Promise<{ data: { data: ApiLacSchedule[] }; status: number }> {
+  const q = new URLSearchParams();
+  if (params.expiring_days != null) q.set('expiring_days', String(params.expiring_days));
+  return apiRequest<{ data: ApiLacSchedule[] }>(`/lac-schedules${q.toString() ? `?${q.toString()}` : ''}`);
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */

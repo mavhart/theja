@@ -13,6 +13,7 @@ interface NavItem {
   href:  string;
   label: string;
   icon:  React.ReactNode;
+  children?: { href: string; label: string }[];
 }
 
 // ─── Icone inline (nessuna dipendenza esterna per ora) ────────────────────────
@@ -78,7 +79,15 @@ const icons = {
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard',  label: 'Dashboard',  icon: icons.dashboard  },
   { href: '/pazienti',   label: 'Pazienti',   icon: icons.patients   },
-  { href: '/magazzino',  label: 'Magazzino',  icon: icons.inventory  },
+  {
+    href: '/magazzino',
+    label: 'Magazzino',
+    icon: icons.inventory,
+    children: [
+      { href: '/magazzino', label: 'Prodotti' },
+      { href: '/magazzino/fornitori', label: 'Fornitori' },
+    ],
+  },
   { href: '/vendite',    label: 'Vendite',    icon: icons.sales      },
   { href: '/agenda',     label: 'Agenda',     icon: icons.agenda     },
   { href: '/impostazioni', label: 'Impostazioni', icon: icons.settings },
@@ -150,20 +159,43 @@ export default function AppShell({ children, posName, userName }: AppShellProps)
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100',
+              <div key={item.href} className="space-y-0.5">
+                <Link
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100',
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+                {item.children && active && (
+                  <div className="ml-8 space-y-0.5">
+                    {item.children.map((c) => {
+                      const cActive = pathname === c.href || pathname.startsWith(c.href + '/');
+                      return (
+                        <Link
+                          key={c.href}
+                          href={c.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            'block rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                            cActive
+                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
+                              : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800',
+                          )}
+                        >
+                          {c.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
+              </div>
             );
           })}
         </nav>

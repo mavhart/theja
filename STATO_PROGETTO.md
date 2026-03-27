@@ -132,7 +132,7 @@
 ---
 
 ## Fase 3 — Magazzino
-**Target: Settimane 8-9 | Stato: 🟡 In corso**
+**Target: Settimane 8-9 | Stato: 🟡 In corso (backend + UI principali)**
 
 ✅ Migrations tenant: `suppliers`, `products`, `inventory_items`, `stock_movements`, `stock_transfer_requests`, `lac_supply_schedules` (via `TenantClinicalSchema`) — 2026-03-27
 ✅ Model `Supplier`, `Product`, `InventoryItem`, `StockMovement`, `StockTransferRequest`, `LacSupplySchedule` (HasUuids + relazioni + cifratura `products.purchase_price`) — 2026-03-27
@@ -143,9 +143,15 @@
 ✅ WebSocket trasferimenti: evento `PosTransferUpdated` + channel privato `pos.{posId}` — 2026-03-27
 ✅ Scadenzario LAC: model `LacSupplySchedule::calculateEndDate()` + scope `expiringSoon()` — 2026-03-27
 ✅ Test feature `InventoryFeatureTest` aggiunto (CRUD prodotto cifrato, carico DDT, trasferimento completo, calcolo scadenza LAC) — 2026-03-27
+✅ UI Next.js — `/magazzino` lista prodotti con tab categoria, ricerca debounce, paginazione 20, badge scorta — 2026-03-27
+✅ UI Next.js — `/magazzino/[id]` tab Principale/Stock/Movimenti/Note + modale carico manuale — 2026-03-27
+✅ UI Next.js — `/magazzino/nuovo` creazione prodotto con campi dinamici per categoria + select fornitore ricercabile — 2026-03-27
+✅ UI Next.js — `/magazzino/fornitori` lista fornitori + dettaglio modale completo — 2026-03-27
+✅ Dashboard — card “Prossime scadenze LAC” con endpoint `/api/lac-schedules?expiring_days=7` — 2026-03-27
+✅ `AppShell` — Magazzino con sottovoci `Prodotti` e `Fornitori` — 2026-03-27
+✅ `apps/web/lib/api.ts` — funzioni inventory UI (`getProducts`, `getProduct`, `createProduct`, `updateProduct`, `getSuppliers`, `getSupplier`, `createSupplier`, `getInventoryStock`, `createStockMovement`, `getStockMovements`, `getLacSchedules`) — 2026-03-27
 ⬜ Alert scorte minime per prodotto/POS
 ⬜ Visibilità stock altri POS (con permesso `inventory.view_other_pos_stock`)
-⬜ Dashboard "scadenze LAC questa settimana"
 ⬜ Reminder automatici paziente LAC
 
 ---
