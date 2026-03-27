@@ -20,6 +20,7 @@ jobs:
   deploy-api:
     name: Deploy API → EC2 staging
     runs-on: ubuntu-latest
+    if: vars.STAGING_EC2_HOST != '' && vars.STAGING_EC2_SSH_KEY != ''
 
     steps:
       - name: Deploy API via SSH
@@ -68,6 +69,7 @@ jobs:
     name: Deploy Web → EC2 staging
     runs-on: ubuntu-latest
     needs: deploy-api   # Prima l'API, poi il frontend
+    if: vars.STAGING_EC2_HOST != '' && vars.STAGING_EC2_SSH_KEY != ''
 
     steps:
       - uses: actions/checkout@v4
@@ -142,7 +144,7 @@ jobs:
     name: Notifica esito
     runs-on: ubuntu-latest
     needs: [deploy-api, deploy-web]
-    if: always()
+    if: always() && vars.STAGING_EC2_HOST != '' && vars.STAGING_EC2_SSH_KEY != ''
 
     steps:
       - name: Esito deploy

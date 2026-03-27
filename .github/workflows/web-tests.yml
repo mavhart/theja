@@ -22,6 +22,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
 
     steps:
       - uses: actions/checkout@v4
@@ -31,10 +33,10 @@ jobs:
         with:
           version: 10
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Install dependencies
