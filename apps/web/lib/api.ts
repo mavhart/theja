@@ -548,6 +548,77 @@ export interface ApiAfterSaleEvent {
 
 export type ApiInvoiceStatus = 'draft' | 'issued' | 'sent_sdi' | 'accepted' | 'rejected' | 'cancelled';
 
+export type ApiAppointmentType =
+  | 'visita_optometrica'
+  | 'prova_lac'
+  | 'consegna_ordine'
+  | 'ritiro_riparazione'
+  | 'generico';
+
+export type ApiAppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+
+export interface ApiAppointment {
+  id: string;
+  pos_id: string;
+  patient_id?: string | null;
+  user_id: number;
+  type: ApiAppointmentType;
+  title?: string | null;
+  status: ApiAppointmentStatus;
+  start_at: string;
+  end_at: string;
+  duration_minutes: number;
+  duration_label?: string;
+  notes?: string | null;
+  internal_notes?: string | null;
+  reminder_sent_at?: string | null;
+  order_id?: string | null;
+  sale_id?: string | null;
+  patient?: ApiPatient | null;
+  user?: ApiUser | null;
+}
+
+export type CommunicationTrigger =
+  | 'appointment_reminder'
+  | 'order_ready'
+  | 'lac_reminder'
+  | 'prescription_reminder'
+  | 'birthday'
+  | 'custom';
+
+export interface ApiCommunicationTemplate {
+  id: string;
+  organization_id: string;
+  pos_id?: string | null;
+  type: 'email' | 'sms';
+  trigger: CommunicationTrigger;
+  subject?: string | null;
+  body: string;
+  variables: string[];
+  is_active: boolean;
+  language: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiCommunicationLog {
+  id: string;
+  organization_id: string;
+  pos_id?: string | null;
+  patient_id?: string | null;
+  type: 'email' | 'sms';
+  trigger: string;
+  subject?: string | null;
+  body: string;
+  status: 'pending' | 'sent' | 'failed' | 'bounced';
+  sent_at?: string | null;
+  error_message?: string | null;
+  provider?: string | null;
+  provider_message_id?: string | null;
+  patient?: ApiPatient | null;
+  created_at?: string;
+}
+
 export interface ApiInvoiceItem {
   id: string;
   invoice_id: string;
@@ -664,6 +735,16 @@ export interface GetOrdersParams {
   lab_supplier_id?: string;
   date_from?: string;
   date_to?: string;
+  page?: number;
+}
+
+export interface GetAppointmentsParams {
+  pos_id?: string;
+  date_from?: string;
+  date_to?: string;
+  type?: ApiAppointmentType;
+  status?: ApiAppointmentStatus;
+  user_id?: string;
   page?: number;
 }
 
@@ -983,6 +1064,91 @@ export function downloadXml(filename: string, xml: string): void {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export async function getAppointments(
+  params: GetAppointmentsParams = {},
+): Promise<{ data: { data: ApiAppointment[]; meta?: LaravelPaginationMeta }; status: number }> {
+  const q = new URLSearchParams({ page: String(params.page ?? 1), per_page: '50' });
+  if (params.pos_id) q.set('pos_id', params.pos_id);
+  if (params.date_from) q.set('date_from', params.date_from);
+  if (params.date_to) q.set('date_to', params.date_to);
+  if (params.type) q.set('type', params.type);
+  if (params.status) q.set('status', params.status);
+  if (params.user_id) q.set('user_id', params.user_id);
+  return apiRequest<{ data: ApiAppointment[]; meta?: LaravelPaginationMeta }>(`/appointments?${q.toString()}`);
+}
+
+export async function getAppointment(id: string): Promise<{ data: { data: ApiAppointment }; status: number }> {
+  return apiRequest<{ data: ApiAppointment }>(`/appointments/${id}`);
+}
+
+export async function createAppointment(payload: Record<string, unknown>): Promise<{ data: { data: ApiAppointment }; status: number }> {
+  return apiRequest<{ data: ApiAppointment }>('/appointments', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateAppointment(id: string, payload: Record<string, unknown>): Promise<{ data: { data: ApiAppointment }; status: number }> {
+  return apiRequest<{ data: ApiAppointment }>(`/appointments/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function cancelAppointment(id: string): Promise<{ data: { message: string }; status: number }> {
+  return apiRequest<{ message: string }>(`/appointments/${id}`, { method: 'DELETE' });
+}
+
+export async function getAppointmentsCalendar(params: { from: string; to: string; pos_id: string }): Promise<{ data: { data: ApiAppointment[] }; status: number }> {
+  const q = new URLSearchParams({ from: params.from, to: params.to, pos_id: params.pos_id });
+  return apiRequest<{ data: ApiAppointment[] }>(`/appointments/calendar?${q.toString()}`);
+}
+
+export async function getAppointmentsToday(posId?: string): Promise<{ data: { data: ApiAppointment[] }; status: number }> {
+  const q = new URLSearchParams();
+  if (posId) q.set('pos_id', posId);
+  return apiRequest<{ data: ApiAppointment[] }>(`/appointments/today${q.toString() ? `?${q.toString()}` : ''}`);
+}
+
+export async function getCommunicationTemplates(
+  page = 1,
+): Promise<{ data: { data: ApiCommunicationTemplate[]; meta?: LaravelPaginationMeta }; status: number }> {
+  return apiRequest<{ data: ApiCommunicationTemplate[]; meta?: LaravelPaginationMeta }>(`/communication-templates?page=${page}&per_page=100`);
+}
+
+export async function createCommunicationTemplate(
+  payload: Partial<ApiCommunicationTemplate>,
+): Promise<{ data: { data: ApiCommunicationTemplate }; status: number }> {
+  return apiRequest<{ data: ApiCommunicationTemplate }>('/communication-templates', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCommunicationTemplate(
+  id: string,
+  payload: Partial<ApiCommunicationTemplate>,
+): Promise<{ data: { data: ApiCommunicationTemplate }; status: number }> {
+  return apiRequest<{ data: ApiCommunicationTemplate }>(`/communication-templates/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteCommunicationTemplate(id: string): Promise<{ data: { message: string }; status: number }> {
+  return apiRequest<{ message: string }>(`/communication-templates/${id}`, { method: 'DELETE' });
+}
+
+export async function getCommunicationLogs(
+  params: { type?: 'email' | 'sms'; status?: 'pending' | 'sent' | 'failed' | 'bounced'; patient_id?: string; date_from?: string; date_to?: string; page?: number } = {},
+): Promise<{ data: { data: ApiCommunicationLog[]; meta?: LaravelPaginationMeta }; status: number }> {
+  const q = new URLSearchParams({ page: String(params.page ?? 1), per_page: '50' });
+  if (params.type) q.set('type', params.type);
+  if (params.status) q.set('status', params.status);
+  if (params.patient_id) q.set('patient_id', params.patient_id);
+  if (params.date_from) q.set('date_from', params.date_from);
+  if (params.date_to) q.set('date_to', params.date_to);
+  return apiRequest<{ data: ApiCommunicationLog[]; meta?: LaravelPaginationMeta }>(`/communication-logs?${q.toString()}`);
+}
+
+export async function getBirthdayPatients(): Promise<{ data: PaginatedPatients; status: number }> {
+  return apiRequest<PaginatedPatients>('/patients?birthday_today=1&per_page=50');
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */

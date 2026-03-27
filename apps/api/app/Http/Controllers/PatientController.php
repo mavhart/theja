@@ -15,12 +15,19 @@ class PatientController extends Controller
     {
         $request->validate([
             'q' => ['nullable', 'string', 'max:255'],
+            'birthday_today' => ['nullable', 'boolean'],
         ]);
 
         $query = Patient::query()->where('is_active', true);
 
         if ($request->filled('q')) {
             $query->search($request->input('q'));
+        }
+
+        if ($request->boolean('birthday_today')) {
+            $query
+                ->whereRaw("to_char(date_of_birth, 'MM') = ?", [now()->format('m')])
+                ->whereRaw("to_char(date_of_birth, 'DD') = ?", [now()->format('d')]);
         }
 
         $perPage = min((int) $request->input('per_page', 15), 100);

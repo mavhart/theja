@@ -68,6 +68,11 @@ const icons = {
       <path d="M9 8h4" />
     </svg>
   ),
+  communications: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
   menu:  (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
       <line x1="3" y1="6"  x2="21" y2="6" />
@@ -108,6 +113,7 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/fatture/tessera-sanitaria', label: 'Tessera Sanitaria' },
     ],
   },
+  { href: '/comunicazioni', label: 'Comunicazioni', icon: icons.communications },
   { href: '/impostazioni', label: 'Impostazioni', icon: icons.settings },
 ];
 

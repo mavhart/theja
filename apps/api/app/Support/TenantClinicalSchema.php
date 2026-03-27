@@ -91,6 +91,18 @@ class TenantClinicalSchema
             self::createInvoiceSequencesTable();
             self::addInvoiceSequencesForeignKeys($schema);
         }
+        if (! Schema::hasTable('appointments')) {
+            self::createAppointmentsTable();
+            self::addAppointmentsForeignKeys($schema);
+        }
+        if (! Schema::hasTable('communication_templates')) {
+            self::createCommunicationTemplatesTable();
+            self::addCommunicationTemplatesForeignKeys($schema);
+        }
+        if (! Schema::hasTable('communication_logs')) {
+            self::createCommunicationLogsTable();
+            self::addCommunicationLogsForeignKeys($schema);
+        }
 
         DB::statement('SET search_path TO public');
     }
@@ -301,6 +313,29 @@ class TenantClinicalSchema
         }
     }
 
+    public static function provisionAgendaCommunicationsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+
+            if (! Schema::hasTable('appointments')) {
+                self::createAppointmentsTable();
+                self::addAppointmentsForeignKeys($schema);
+            }
+            if (! Schema::hasTable('communication_templates')) {
+                self::createCommunicationTemplatesTable();
+                self::addCommunicationTemplatesForeignKeys($schema);
+            }
+            if (! Schema::hasTable('communication_logs')) {
+                self::createCommunicationLogsTable();
+                self::addCommunicationLogsForeignKeys($schema);
+            }
+
+            DB::statement('SET search_path TO public');
+        }
+    }
+
     public static function dropPatientsForAllOrganizations(): void
     {
         foreach (DB::table('organizations')->pluck('id') as $id) {
@@ -449,6 +484,18 @@ class TenantClinicalSchema
             Schema::dropIfExists('invoice_items');
             Schema::dropIfExists('invoices');
             Schema::dropIfExists('invoice_sequences');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropAgendaCommunicationsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('appointments');
+            Schema::dropIfExists('communication_logs');
+            Schema::dropIfExists('communication_templates');
             DB::statement('SET search_path TO public');
         }
     }
@@ -993,6 +1040,73 @@ class TenantClinicalSchema
         });
     }
 
+    public static function createAppointmentsTable(): void
+    {
+        Schema::create('appointments', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id');
+            $table->uuid('patient_id')->nullable()->index();
+            $table->foreignId('user_id')->index();
+            $table->enum('type', ['visita_optometrica', 'prova_lac', 'consegna_ordine', 'ritiro_riparazione', 'generico'])->default('generico');
+            $table->string('title')->nullable();
+            $table->enum('status', ['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'])->default('scheduled');
+            $table->timestamp('start_at');
+            $table->timestamp('end_at');
+            $table->integer('duration_minutes')->default(30);
+            $table->text('notes')->nullable();
+            $table->text('internal_notes')->nullable();
+            $table->timestamp('reminder_sent_at')->nullable();
+            $table->uuid('order_id')->nullable()->index();
+            $table->uuid('sale_id')->nullable()->index();
+            $table->timestamps();
+
+            $table->index(['pos_id', 'start_at']);
+            $table->index(['status', 'type']);
+        });
+    }
+
+    public static function createCommunicationTemplatesTable(): void
+    {
+        Schema::create('communication_templates', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('pos_id')->nullable()->index();
+            $table->enum('type', ['email', 'sms']);
+            $table->enum('trigger', ['appointment_reminder', 'order_ready', 'lac_reminder', 'prescription_reminder', 'birthday', 'custom']);
+            $table->string('subject')->nullable();
+            $table->text('body');
+            $table->jsonb('variables')->default('[]');
+            $table->boolean('is_active')->default(true);
+            $table->string('language', 8)->default('it');
+            $table->timestamps();
+
+            $table->index(['organization_id', 'trigger']);
+        });
+    }
+
+    public static function createCommunicationLogsTable(): void
+    {
+        Schema::create('communication_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('pos_id')->nullable()->index();
+            $table->uuid('patient_id')->nullable()->index();
+            $table->enum('type', ['email', 'sms']);
+            $table->string('trigger', 64);
+            $table->string('subject')->nullable();
+            $table->text('body');
+            $table->enum('status', ['pending', 'sent', 'failed', 'bounced'])->default('pending');
+            $table->timestamp('sent_at')->nullable();
+            $table->text('error_message')->nullable();
+            $table->string('provider')->nullable();
+            $table->string('provider_message_id')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->index(['organization_id', 'created_at']);
+            $table->index(['status', 'type']);
+        });
+    }
+
     protected static function addPatientForeignKeys(string $schema): void
     {
         $sql = [
@@ -1214,6 +1328,53 @@ class TenantClinicalSchema
     {
         DB::statement("ALTER TABLE \"{$schema}\".invoice_sequences DROP CONSTRAINT IF EXISTS invoice_sequences_pos_id_foreign");
         DB::statement("ALTER TABLE \"{$schema}\".invoice_sequences ADD CONSTRAINT invoice_sequences_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT");
+    }
+
+    protected static function addAppointmentsForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".appointments DROP CONSTRAINT IF EXISTS appointments_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".appointments ADD CONSTRAINT appointments_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".appointments DROP CONSTRAINT IF EXISTS appointments_patient_id_foreign",
+            "ALTER TABLE \"{$schema}\".appointments ADD CONSTRAINT appointments_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE SET NULL",
+            "ALTER TABLE \"{$schema}\".appointments DROP CONSTRAINT IF EXISTS appointments_user_id_foreign",
+            "ALTER TABLE \"{$schema}\".appointments ADD CONSTRAINT appointments_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".appointments DROP CONSTRAINT IF EXISTS appointments_order_id_foreign",
+            "ALTER TABLE \"{$schema}\".appointments ADD CONSTRAINT appointments_order_id_foreign FOREIGN KEY (order_id) REFERENCES \"{$schema}\".orders(id) ON DELETE SET NULL",
+            "ALTER TABLE \"{$schema}\".appointments DROP CONSTRAINT IF EXISTS appointments_sale_id_foreign",
+            "ALTER TABLE \"{$schema}\".appointments ADD CONSTRAINT appointments_sale_id_foreign FOREIGN KEY (sale_id) REFERENCES \"{$schema}\".sales(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addCommunicationTemplatesForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".communication_templates DROP CONSTRAINT IF EXISTS communication_templates_organization_id_foreign",
+            "ALTER TABLE \"{$schema}\".communication_templates ADD CONSTRAINT communication_templates_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE",
+            "ALTER TABLE \"{$schema}\".communication_templates DROP CONSTRAINT IF EXISTS communication_templates_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".communication_templates ADD CONSTRAINT communication_templates_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addCommunicationLogsForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".communication_logs DROP CONSTRAINT IF EXISTS communication_logs_organization_id_foreign",
+            "ALTER TABLE \"{$schema}\".communication_logs ADD CONSTRAINT communication_logs_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE",
+            "ALTER TABLE \"{$schema}\".communication_logs DROP CONSTRAINT IF EXISTS communication_logs_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".communication_logs ADD CONSTRAINT communication_logs_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE SET NULL",
+            "ALTER TABLE \"{$schema}\".communication_logs DROP CONSTRAINT IF EXISTS communication_logs_patient_id_foreign",
+            "ALTER TABLE \"{$schema}\".communication_logs ADD CONSTRAINT communication_logs_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
     }
 
     protected static function addAfterSaleEventsForeignKeys(string $schema): void

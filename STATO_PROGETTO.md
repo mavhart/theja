@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-27 (sessione 14)
+> Aggiornato: 2026-03-27 (sessione 15)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -195,15 +195,15 @@
 ---
 
 ## Fase 6 — Agenda e Comunicazioni
-**Target: Settimane 16-17 | Stato: ⬜ Non iniziato**
+**Target: Settimane 16-17 | Stato: ✅ Completata (backend + frontend + scheduler)**
 
-⬜ Calendario settimanale/mensile per POS (tipologie, durata, blocchi)
-⬜ Reminder appuntamento email/SMS (24h prima)
-⬜ Notifica "occhiali pronti" automatica
-⬜ Reminder revisione prescrizione
-⬜ Auguri compleanno + comunicazioni promozionali
-⬜ AWS SES + provider SMS configurati
-⬜ Template email/SMS configurabili per POS
+✅ Calendario settimanale POS (`appointments`) con API filtri/calendar/today + UI agenda (griglia oraria desktop + lista mobile + modale nuovo/modifica) — 2026-03-27
+✅ Reminder appuntamento email/SMS (24h prima) via `CommunicationService::scheduleReminders()` + scheduler daily — 2026-03-27
+✅ Notifica "occhiali pronti" automatica (trigger template `order_ready` nel modulo comunicazioni) — 2026-03-27
+✅ Reminder revisione prescrizione via `schedulePrescriptionReminders()` — 2026-03-27
+✅ Auguri compleanno + comunicazioni promozionali base via `scheduleBirthdays()` + template custom — 2026-03-27
+✅ AWS SES + provider SMS configurati (email via `MAIL_MAILER=ses`, SMS provider `log` stub) — 2026-03-27
+✅ Template email/SMS configurabili per POS/org (`communication_templates`) + log invii (`communication_logs`) con UI dedicata — 2026-03-27
 
 ---
 
@@ -260,12 +260,12 @@
 
 ## Prossimo task da eseguire
 
-**Fase 4 — Vendite e Ordini**
+**Fase 5 — Fatturazione (hardening + integrazioni esterne)**
 
 Prossimi task in ordine:
-1. **Preventivi** — workflow bozza/inviato/accettato + PDF
-2. **Ordini** — stati avanzamento e tracking laboratorio
-3. **Pagamenti vendita** — acconti multipli e rate pianificate
+1. **Conservazione digitale** — storage S3 + retention documenti fiscali
+2. **Collaudo MEF** — validazione/invio ambiente test tessera sanitaria
+3. **Automazione invio TS** — job mensile con audit completo
 
 ---
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getLacSchedules, getPendingOrdersDashboard, type ApiLacSchedule } from '@/lib/api';
+import { getAppointmentsToday, getBirthdayPatients, getLacSchedules, getPendingOrdersDashboard, type ApiAppointment, type ApiLacSchedule, type ApiPatient } from '@/lib/api';
 
 interface StatCard {
   label:       string;
@@ -14,6 +14,8 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
   const [lacRows, setLacRows] = useState<ApiLacSchedule[]>([]);
   const [lacLoading, setLacLoading] = useState(true);
   const [orders, setOrders] = useState({ sent: 0, in_progress: 0, ready: 0 });
+  const [appointmentsToday, setAppointmentsToday] = useState<ApiAppointment[]>([]);
+  const [birthdaysToday, setBirthdaysToday] = useState<ApiPatient[]>([]);
 
   useEffect(() => {
     getLacSchedules({ expiring_days: 7 })
@@ -30,6 +32,14 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
           ready: data.data.ready ?? 0,
         });
       }
+    });
+
+    getAppointmentsToday().then(({ status, data }) => {
+      if (status === 200) setAppointmentsToday(data.data ?? []);
+    });
+
+    getBirthdayPatients().then(({ status, data }) => {
+      if (status === 200) setBirthdaysToday(data.data ?? []);
     });
   }, []);
 
@@ -105,6 +115,46 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Appuntamenti oggi</h2>
+          {appointmentsToday.length === 0 ? (
+            <p className="text-sm text-zinc-400 dark:text-zinc-500">Nessun appuntamento per oggi</p>
+          ) : (
+            <div className="space-y-2">
+              {appointmentsToday.slice(0, 8).map((a) => (
+                <div key={a.id} className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-sm">
+                  <div className="font-medium">
+                    {new Date(a.start_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} — {a.type}
+                  </div>
+                  <div className="text-zinc-500 dark:text-zinc-400">
+                    {a.patient ? `${a.patient.last_name} ${a.patient.first_name}` : (a.title ?? 'Appuntamento')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Compleanni oggi</h2>
+          {birthdaysToday.length === 0 ? (
+            <p className="text-sm text-zinc-400 dark:text-zinc-500">Nessun compleanno oggi</p>
+          ) : (
+            <div className="space-y-2">
+              {birthdaysToday.slice(0, 8).map((p) => (
+                <div key={p.id} className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-sm">
+                  <div className="font-medium">{p.last_name} {p.first_name}</div>
+                  <div className="text-zinc-500 dark:text-zinc-400">
+                    {p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString('it-IT') : '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

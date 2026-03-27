@@ -8,6 +8,9 @@ use App\Http\Controllers\LacExamController;
 use App\Http\Controllers\LacScheduleController;
 use App\Http\Controllers\LabelPrintController;
 use App\Http\Controllers\LabelTemplateController;
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\CommunicationTemplateController;
+use App\Http\Controllers\CommunicationLogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionOcrController;
@@ -146,4 +149,13 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
 
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
     Route::get('/invoices/{invoice}/xml', [InvoiceController::class, 'xml']);
+
+    // ─── Agenda e comunicazioni (Fase 6) ─────────────────────────────────────
+    Route::get('/appointments/calendar', [AppointmentController::class, 'calendar']);
+    Route::get('/appointments/today', [AppointmentController::class, 'today']);
+    Route::apiResource('appointments', AppointmentController::class);
+
+    Route::apiResource('communication-templates', CommunicationTemplateController::class);
+    Route::get('/communication-logs', [CommunicationLogController::class, 'index']);
+    Route::get('/communication-logs/{communicationLog}', [CommunicationLogController::class, 'show']);
 });
