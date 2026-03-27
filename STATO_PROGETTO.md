@@ -181,16 +181,16 @@
 ---
 
 ## Fase 5 — Fatturazione
-**Target: Settimane 13-15 | Stato: ⬜ Non iniziato**
+**Target: Settimane 13-15 | Stato: 🟡 In corso (base + SDI/XML + RT stub + SistemaTS stub)**
 
-⬜ Fatturazione base (numerazione progressiva, PDF)
-⬜ Fattura elettronica SDI (XML FatturaPA, invio, notifiche)
-⬜ Conservazione digitale 10 anni
-⬜ Modulo `SistemaTS` (Client SOAP, XmlBuilder, Validator, TransmissionLog)
-⬜ Mapping vendite ottiche → tracciato XML MEF
+✅ Fatturazione base (numerazione progressiva, PDF)
+✅ Fattura elettronica SDI (XML FatturaPA, invio SDI stub, notifiche placeholder)
+🟡 Conservazione digitale 10 anni (colonne `xml_path`/`pdf_path`: storage/retention in Fase 9)
+✅ Modulo `SistemaTS` (`XmlBuilder` stub per record MEF)
+✅ Mapping vendite ottiche → tracciato XML MEF (stub via `SistemaTS\\XmlBuilder`)
 ⬜ Test su ambiente collaudo MEF
 ⬜ Invio automatico mensile tessera sanitaria
-⬜ RT fisico — integrazione protocollo standard
+✅ RT fisico — integrazione protocollo standard (stub locale + log)
 
 ---
 

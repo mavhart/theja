@@ -79,6 +79,19 @@ class TenantClinicalSchema
             self::addAfterSaleEventsForeignKeys($schema);
         }
 
+        if (! Schema::hasTable('invoices')) {
+            self::createInvoicesTable();
+            self::addInvoicesForeignKeys($schema);
+        }
+        if (! Schema::hasTable('invoice_items')) {
+            self::createInvoiceItemsTable();
+            self::addInvoiceItemsForeignKeys($schema);
+        }
+        if (! Schema::hasTable('invoice_sequences')) {
+            self::createInvoiceSequencesTable();
+            self::addInvoiceSequencesForeignKeys($schema);
+        }
+
         DB::statement('SET search_path TO public');
     }
 
@@ -265,6 +278,29 @@ class TenantClinicalSchema
         }
     }
 
+    public static function provisionInvoicesForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+
+            if (! Schema::hasTable('invoices')) {
+                self::createInvoicesTable();
+                self::addInvoicesForeignKeys($schema);
+            }
+            if (! Schema::hasTable('invoice_items')) {
+                self::createInvoiceItemsTable();
+                self::addInvoiceItemsForeignKeys($schema);
+            }
+            if (! Schema::hasTable('invoice_sequences')) {
+                self::createInvoiceSequencesTable();
+                self::addInvoiceSequencesForeignKeys($schema);
+            }
+
+            DB::statement('SET search_path TO public');
+        }
+    }
+
     public static function dropPatientsForAllOrganizations(): void
     {
         foreach (DB::table('organizations')->pluck('id') as $id) {
@@ -401,6 +437,18 @@ class TenantClinicalSchema
             $schema = self::schemaNameForOrganizationId((string) $id);
             DB::statement('SET search_path TO "'.$schema.'", public');
             Schema::dropIfExists('after_sale_events');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropInvoicesForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('invoice_items');
+            Schema::dropIfExists('invoices');
+            Schema::dropIfExists('invoice_sequences');
             DB::statement('SET search_path TO public');
         }
     }
@@ -861,6 +909,90 @@ class TenantClinicalSchema
         });
     }
 
+    public static function createInvoicesTable(): void
+    {
+        Schema::create('invoices', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id');
+            $table->uuid('organization_id');
+            $table->uuid('sale_id')->nullable()->index();
+            $table->uuid('patient_id')->nullable()->index();
+
+            $table->string('invoice_number', 64);
+            $table->date('invoice_date');
+            $table->enum('type', ['fattura', 'ricevuta', 'fattura_pa'])->default('fattura');
+            $table->enum('status', ['draft', 'issued', 'sent_sdi', 'accepted', 'rejected', 'cancelled'])->default('draft');
+
+            // Cessionario/Committente
+            $table->string('customer_fiscal_code')->nullable();
+            $table->string('customer_vat_number')->nullable();
+            $table->string('customer_name', 255);
+            $table->text('customer_address')->nullable();
+            $table->string('customer_city')->nullable();
+            $table->string('customer_cap')->nullable();
+            $table->string('customer_province')->nullable();
+            $table->string('customer_country', 2)->default('IT');
+            $table->string('customer_pec')->nullable();
+            $table->string('customer_fe_code')->nullable();
+
+            // Riepilogo importi
+            $table->decimal('subtotal', 10, 2)->default(0);
+            $table->decimal('vat_amount', 10, 2)->default(0);
+            $table->decimal('total', 10, 2)->default(0);
+
+            // Pagamento / SDI
+            $table->string('payment_method')->nullable();
+            $table->string('payment_terms')->nullable();
+            $table->string('sdi_identifier')->nullable();
+            $table->timestamp('sdi_sent_at')->nullable();
+            $table->timestamp('sdi_response_at')->nullable();
+            $table->string('sdi_response_code')->nullable();
+            $table->string('xml_path')->nullable();
+            $table->string('pdf_path')->nullable();
+
+            $table->text('notes')->nullable();
+            $table->timestamps();
+
+            $table->index(['pos_id', 'invoice_date']);
+            $table->unique(['pos_id', 'invoice_number']);
+        });
+    }
+
+    public static function createInvoiceItemsTable(): void
+    {
+        Schema::create('invoice_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('invoice_id')->index();
+            $table->string('description', 255);
+
+            $table->decimal('quantity', 8, 3);
+            $table->decimal('unit_price', 10, 2);
+            $table->decimal('discount_percent', 5, 2)->default(0);
+
+            $table->decimal('subtotal', 10, 2);
+            $table->decimal('vat_rate', 5, 2);
+            $table->decimal('vat_amount', 10, 2);
+            $table->decimal('total', 10, 2);
+
+            $table->string('sts_code')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public static function createInvoiceSequencesTable(): void
+    {
+        Schema::create('invoice_sequences', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id')->index();
+            $table->integer('year');
+            $table->integer('last_number')->default(0);
+            $table->string('prefix', 16)->nullable();
+            $table->timestamps();
+
+            $table->unique(['pos_id', 'year']);
+        });
+    }
+
     protected static function addPatientForeignKeys(string $schema): void
     {
         $sql = [
@@ -1043,6 +1175,45 @@ class TenantClinicalSchema
         foreach ($sql as $s) {
             DB::statement($s);
         }
+    }
+
+    protected static function addInvoicesForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".invoices DROP CONSTRAINT IF EXISTS invoices_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".invoices ADD CONSTRAINT invoices_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+
+            "ALTER TABLE \"{$schema}\".invoices DROP CONSTRAINT IF EXISTS invoices_organization_id_foreign",
+            "ALTER TABLE \"{$schema}\".invoices ADD CONSTRAINT invoices_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE",
+
+            "ALTER TABLE \"{$schema}\".invoices DROP CONSTRAINT IF EXISTS invoices_sale_id_foreign",
+            "ALTER TABLE \"{$schema}\".invoices ADD CONSTRAINT invoices_sale_id_foreign FOREIGN KEY (sale_id) REFERENCES \"{$schema}\".sales(id) ON DELETE SET NULL",
+
+            "ALTER TABLE \"{$schema}\".invoices DROP CONSTRAINT IF EXISTS invoices_patient_id_foreign",
+            "ALTER TABLE \"{$schema}\".invoices ADD CONSTRAINT invoices_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE SET NULL",
+        ];
+
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addInvoiceItemsForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".invoice_items DROP CONSTRAINT IF EXISTS invoice_items_invoice_id_foreign",
+            "ALTER TABLE \"{$schema}\".invoice_items ADD CONSTRAINT invoice_items_invoice_id_foreign FOREIGN KEY (invoice_id) REFERENCES \"{$schema}\".invoices(id) ON DELETE CASCADE",
+        ];
+
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addInvoiceSequencesForeignKeys(string $schema): void
+    {
+        DB::statement("ALTER TABLE \"{$schema}\".invoice_sequences DROP CONSTRAINT IF EXISTS invoice_sequences_pos_id_foreign");
+        DB::statement("ALTER TABLE \"{$schema}\".invoice_sequences ADD CONSTRAINT invoice_sequences_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT");
     }
 
     protected static function addAfterSaleEventsForeignKeys(string $schema): void

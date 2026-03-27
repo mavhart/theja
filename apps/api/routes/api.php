@@ -18,6 +18,7 @@ use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\CheckFeatureActive;
@@ -133,4 +134,16 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::get('/after-sale-events', [AfterSaleController::class, 'index']);
     Route::post('/after-sale-events', [AfterSaleController::class, 'store']);
     Route::post('/after-sale-events/{afterSaleEvent}/status', [AfterSaleController::class, 'updateStatus']);
+
+    // ─── Fatturazione (Fase 5) ─────────────────────────────────────────────
+    Route::get('/invoices', [InvoiceController::class, 'index']);
+    Route::post('/invoices', [InvoiceController::class, 'store']);
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+    Route::put('/invoices/{invoice}', [InvoiceController::class, 'update']);
+
+    Route::post('/invoices/{invoice}/issue', [InvoiceController::class, 'issue']);
+    Route::post('/invoices/{invoice}/send-sdi', [InvoiceController::class, 'sendSdi']);
+
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+    Route::get('/invoices/{invoice}/xml', [InvoiceController::class, 'xml']);
 });

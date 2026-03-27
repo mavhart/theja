@@ -546,6 +546,66 @@ export interface ApiAfterSaleEvent {
   updated_at?: string;
 }
 
+export type ApiInvoiceStatus = 'draft' | 'issued' | 'sent_sdi' | 'accepted' | 'rejected' | 'cancelled';
+
+export interface ApiInvoiceItem {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number | string;
+  unit_price: number | string;
+  discount_percent: number | string;
+  subtotal: number | string;
+  vat_rate: number | string;
+  vat_amount: number | string;
+  total: number | string;
+  sts_code?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiInvoice {
+  id: string;
+  invoice_number: string;
+  formatted_number: string;
+  invoice_date: string;
+  pos_id: string;
+  organization_id: string;
+  sale_id?: string | null;
+  patient_id?: string | null;
+
+  type: 'fattura' | 'ricevuta' | 'fattura_pa';
+  status: ApiInvoiceStatus;
+
+  customer_fiscal_code?: string | null;
+  customer_vat_number?: string | null;
+  customer_name: string;
+  customer_address?: string | null;
+  customer_city?: string | null;
+  customer_cap?: string | null;
+  customer_province?: string | null;
+  customer_country?: string | null;
+  customer_pec?: string | null;
+  customer_fe_code?: string | null;
+
+  subtotal: number | string;
+  vat_amount: number | string;
+  total: number | string;
+
+  payment_method?: string | null;
+  payment_terms?: string | null;
+
+  sdi_identifier?: string | null;
+  sdi_sent_at?: string | null;
+  sdi_response_at?: string | null;
+  sdi_response_code?: string | null;
+  xml_path?: string | null;
+  pdf_path?: string | null;
+
+  notes?: string | null;
+  items?: ApiInvoiceItem[];
+}
+
 export interface ApiLabelField {
   key: 'barcode' | 'barcode_number' | 'brand' | 'model' | 'caliber_bridge' | 'color' | 'sale_price' | 'supplier';
   label: string;
@@ -865,6 +925,64 @@ export async function createAfterSaleEvent(payload: Record<string, unknown>): Pr
 
 export async function updateAfterSaleEventStatus(id: string, payload: Record<string, unknown>): Promise<{ data: { data: ApiAfterSaleEvent }; status: number }> {
   return apiRequest<{ data: ApiAfterSaleEvent }>(`/after-sale-events/${id}/status`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export interface GetInvoicesParams {
+  status?: ApiInvoiceStatus;
+  date_from?: string;
+  date_to?: string;
+  patient_id?: string;
+  page?: number;
+}
+
+export async function getInvoices(
+  params: GetInvoicesParams = {},
+): Promise<{ data: { data: ApiInvoice[]; meta?: LaravelPaginationMeta }; status: number }> {
+  const q = new URLSearchParams({ page: String(params.page ?? 1), per_page: '20' });
+  if (params.status) q.set('status', params.status);
+  if (params.patient_id) q.set('patient_id', params.patient_id);
+  if (params.date_from) q.set('date_from', params.date_from);
+  if (params.date_to) q.set('date_to', params.date_to);
+
+  return apiRequest<{ data: ApiInvoice[]; meta?: LaravelPaginationMeta }>(`/invoices?${q.toString()}`);
+}
+
+export async function getInvoice(id: string): Promise<{ data: { data: ApiInvoice }; status: number }> {
+  return apiRequest<{ data: ApiInvoice }>(`/invoices/${id}`);
+}
+
+export async function createInvoice(payload: Record<string, unknown>): Promise<{ data: { data: ApiInvoice }; status: number }> {
+  return apiRequest<{ data: ApiInvoice }>('/invoices', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateInvoice(id: string, payload: Record<string, unknown>): Promise<{ data: { data: ApiInvoice }; status: number }> {
+  return apiRequest<{ data: ApiInvoice }>(`/invoices/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function issueInvoice(id: string): Promise<{ data: { data: ApiInvoice }; status: number }> {
+  return apiRequest<{ data: ApiInvoice }>(`/invoices/${id}/issue`, { method: 'POST' });
+}
+
+export async function sendSdiInvoice(id: string): Promise<{ data: { data: ApiInvoice }; status: number }> {
+  return apiRequest<{ data: ApiInvoice }>(`/invoices/${id}/send-sdi`, { method: 'POST' });
+}
+
+export async function fetchInvoicePdf(id: string): Promise<{ data: { filename: string; pdf_base64: string }; status: number }> {
+  return apiRequest<{ filename: string; pdf_base64: string }>(`/invoices/${id}/pdf`);
+}
+
+export async function fetchInvoiceXml(id: string): Promise<{ data: { filename: string; xml: string }; status: number }> {
+  return apiRequest<{ filename: string; xml: string }>(`/invoices/${id}/xml`);
+}
+
+export function downloadXml(filename: string, xml: string): void {
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */
