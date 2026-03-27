@@ -7,20 +7,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Tabelle cliniche negli schema tenant PostgreSQL (tenant_{orgIdNoHyphens}).
+ * Tabelle tenant negli schema PostgreSQL (tenant_{orgIdNoHyphens}).
  */
 class TenantClinicalSchema
 {
     public static function schemaNameForOrganizationId(string $organizationId): string
     {
-        return 'tenant_' . str_replace('-', '', $organizationId);
+        return 'tenant_'.str_replace('-', '', $organizationId);
     }
 
     public static function provisionAllClinicalForOrganization(string $organizationId): void
     {
         $schema = self::schemaNameForOrganizationId($organizationId);
-        DB::statement('CREATE SCHEMA IF NOT EXISTS "' . $schema . '"');
-        DB::statement('SET search_path TO "' . $schema . '", public');
+        DB::statement('CREATE SCHEMA IF NOT EXISTS "'.$schema.'"');
+        DB::statement('SET search_path TO "'.$schema.'", public');
 
         if (! Schema::hasTable('patients')) {
             self::createPatientsTable();
@@ -33,6 +33,30 @@ class TenantClinicalSchema
         if (! Schema::hasTable('lac_exams')) {
             self::createLacExamsTable();
             self::addLacExamForeignKeys($schema);
+        }
+        if (! Schema::hasTable('suppliers')) {
+            self::createSuppliersTable();
+            self::addSupplierForeignKeys($schema);
+        }
+        if (! Schema::hasTable('products')) {
+            self::createProductsTable();
+            self::addProductForeignKeys($schema);
+        }
+        if (! Schema::hasTable('inventory_items')) {
+            self::createInventoryItemsTable();
+            self::addInventoryItemForeignKeys($schema);
+        }
+        if (! Schema::hasTable('stock_movements')) {
+            self::createStockMovementsTable();
+            self::addStockMovementForeignKeys($schema);
+        }
+        if (! Schema::hasTable('stock_transfer_requests')) {
+            self::createStockTransferRequestsTable();
+            self::addStockTransferRequestForeignKeys($schema);
+        }
+        if (! Schema::hasTable('lac_supply_schedules')) {
+            self::createLacSupplySchedulesTable();
+            self::addLacSupplyScheduleForeignKeys($schema);
         }
 
         DB::statement('SET search_path TO public');
@@ -78,6 +102,84 @@ class TenantClinicalSchema
         }
     }
 
+    public static function provisionSuppliersForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            if (! Schema::hasTable('suppliers')) {
+                self::createSuppliersTable();
+                self::addSupplierForeignKeys($schema);
+            }
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function provisionProductsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            if (! Schema::hasTable('products')) {
+                self::createProductsTable();
+                self::addProductForeignKeys($schema);
+            }
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function provisionInventoryItemsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            if (! Schema::hasTable('inventory_items')) {
+                self::createInventoryItemsTable();
+                self::addInventoryItemForeignKeys($schema);
+            }
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function provisionStockMovementsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            if (! Schema::hasTable('stock_movements')) {
+                self::createStockMovementsTable();
+                self::addStockMovementForeignKeys($schema);
+            }
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function provisionStockTransferRequestsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            if (! Schema::hasTable('stock_transfer_requests')) {
+                self::createStockTransferRequestsTable();
+                self::addStockTransferRequestForeignKeys($schema);
+            }
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function provisionLacSupplySchedulesForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            if (! Schema::hasTable('lac_supply_schedules')) {
+                self::createLacSupplySchedulesTable();
+                self::addLacSupplyScheduleForeignKeys($schema);
+            }
+            DB::statement('SET search_path TO public');
+        }
+    }
+
     public static function dropPatientsForAllOrganizations(): void
     {
         foreach (DB::table('organizations')->pluck('id') as $id) {
@@ -104,6 +206,66 @@ class TenantClinicalSchema
             $schema = self::schemaNameForOrganizationId((string) $id);
             DB::statement('SET search_path TO "' . $schema . '", public');
             Schema::dropIfExists('lac_exams');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropSuppliersForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('suppliers');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropProductsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('products');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropInventoryItemsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('inventory_items');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropStockMovementsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('stock_movements');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropStockTransferRequestsForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('stock_transfer_requests');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropLacSupplySchedulesForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('lac_supply_schedules');
             DB::statement('SET search_path TO public');
         }
     }
@@ -264,6 +426,195 @@ class TenantClinicalSchema
         });
     }
 
+    public static function createSuppliersTable(): void
+    {
+        Schema::create('suppliers', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->string('type', 16);
+            $table->string('company_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('first_name')->nullable();
+            $table->string('code')->nullable();
+            $table->string('address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('cap', 16)->nullable();
+            $table->string('province', 8)->nullable();
+            $table->string('country', 2)->default('IT');
+            $table->string('phone')->nullable();
+            $table->string('fax')->nullable();
+            $table->string('toll_free')->nullable();
+            $table->string('store_code')->nullable();
+            $table->string('fiscal_code', 32)->nullable();
+            $table->string('vat_number', 32)->nullable();
+            $table->string('pec')->nullable();
+            $table->string('fe_recipient_code', 16)->nullable();
+            $table->string('bank_name')->nullable();
+            $table->string('abi', 16)->nullable();
+            $table->string('cab', 16)->nullable();
+            $table->string('bic_swift', 16)->nullable();
+            $table->string('iban', 34)->nullable();
+            $table->string('account_number')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->string('email')->nullable();
+            $table->string('website')->nullable();
+            $table->string('accountant_code')->nullable();
+            $table->string('user_id_catalog')->nullable();
+            $table->string('password_catalog')->nullable();
+            $table->string('user_id_images')->nullable();
+            $table->string('password_images')->nullable();
+            $table->text('notes')->nullable();
+            $table->jsonb('categories')->default('[]');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            $table->index('organization_id');
+            $table->index('code');
+            $table->index('company_name');
+        });
+    }
+
+    public static function createProductsTable(): void
+    {
+        Schema::create('products', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('supplier_id')->nullable()->index();
+            $table->string('category', 32);
+            $table->string('barcode')->nullable();
+            $table->string('sku')->nullable();
+            $table->string('internal_code')->nullable();
+            $table->string('personal_code')->nullable();
+            $table->string('brand')->nullable();
+            $table->string('line')->nullable();
+            $table->string('model')->nullable();
+            $table->string('color')->nullable();
+            $table->string('material')->nullable();
+            $table->string('lens_type')->nullable();
+            $table->string('lens_color')->nullable();
+            $table->string('user_type', 16)->nullable();
+            $table->string('mounting_type')->nullable();
+            $table->integer('caliber')->nullable();
+            $table->integer('bridge')->nullable();
+            $table->integer('temple')->nullable();
+            $table->boolean('is_polarized')->default(false);
+            $table->boolean('is_ce')->default(false);
+            $table->jsonb('attributes')->default('{}');
+            $table->text('purchase_price')->nullable();
+            $table->decimal('markup_percent', 5, 2)->nullable();
+            $table->decimal('net_price', 10, 2)->nullable();
+            $table->decimal('list_price', 10, 2)->nullable();
+            $table->decimal('sale_price', 10, 2)->nullable();
+            $table->string('vat_code')->nullable();
+            $table->decimal('vat_rate', 5, 2)->default(22);
+            $table->date('inserted_at')->nullable();
+            $table->date('date_start')->nullable();
+            $table->date('date_end')->nullable();
+            $table->string('customs_code')->nullable();
+            $table->text('notes')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            $table->index('organization_id');
+            $table->index('category');
+            $table->index('barcode');
+            $table->index('sku');
+            $table->index('internal_code');
+            $table->index('brand');
+            $table->index('model');
+        });
+    }
+
+    public static function createInventoryItemsTable(): void
+    {
+        Schema::create('inventory_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id');
+            $table->uuid('product_id');
+            $table->integer('quantity')->default(0);
+            $table->integer('quantity_arriving')->default(0);
+            $table->integer('quantity_reserved')->default(0);
+            $table->integer('quantity_sold')->default(0);
+            $table->integer('min_stock')->default(0);
+            $table->integer('max_stock')->default(0);
+            $table->date('last_purchase_date')->nullable();
+            $table->date('last_sale_date')->nullable();
+            $table->string('location')->nullable();
+            $table->timestamps();
+
+            $table->unique(['pos_id', 'product_id']);
+        });
+    }
+
+    public static function createStockMovementsTable(): void
+    {
+        Schema::create('stock_movements', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id');
+            $table->uuid('product_id');
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('type', 32);
+            $table->integer('quantity');
+            $table->integer('quantity_before');
+            $table->integer('quantity_after');
+            $table->string('ddt_number')->nullable();
+            $table->date('ddt_date')->nullable();
+            $table->uuid('supplier_id')->nullable()->index();
+            $table->string('reference')->nullable();
+            $table->string('lot')->nullable();
+            $table->date('expiry_date')->nullable();
+            $table->decimal('purchase_price', 10, 2)->nullable();
+            $table->decimal('sale_price', 10, 2)->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->index(['pos_id', 'product_id']);
+            $table->index('type');
+        });
+    }
+
+    public static function createStockTransferRequestsTable(): void
+    {
+        Schema::create('stock_transfer_requests', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('from_pos_id');
+            $table->uuid('to_pos_id');
+            $table->foreignId('requested_by_user_id');
+            $table->uuid('product_id');
+            $table->integer('quantity');
+            $table->string('status', 16)->default('requested');
+            $table->text('rejection_reason')->nullable();
+            $table->string('ddt_number')->nullable();
+            $table->string('ddt_pdf_path')->nullable();
+            $table->timestamp('requested_at')->useCurrent();
+            $table->timestamp('resolved_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+
+            $table->index(['from_pos_id', 'to_pos_id']);
+            $table->index('status');
+        });
+    }
+
+    public static function createLacSupplySchedulesTable(): void
+    {
+        Schema::create('lac_supply_schedules', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('patient_id');
+            $table->uuid('pos_id');
+            $table->uuid('product_id');
+            $table->date('supply_date');
+            $table->integer('quantity');
+            $table->integer('estimated_duration_days');
+            $table->date('estimated_end_date');
+            $table->timestamp('reminder_sent_at')->nullable();
+            $table->string('patient_response', 16)->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->index('estimated_end_date');
+        });
+    }
+
     protected static function addPatientForeignKeys(string $schema): void
     {
         $sql = [
@@ -305,6 +656,87 @@ class TenantClinicalSchema
             "ALTER TABLE \"{$schema}\".lac_exams ADD CONSTRAINT lac_exams_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
             "ALTER TABLE \"{$schema}\".lac_exams DROP CONSTRAINT IF EXISTS lac_exams_optician_user_id_foreign",
             "ALTER TABLE \"{$schema}\".lac_exams ADD CONSTRAINT lac_exams_optician_user_id_foreign FOREIGN KEY (optician_user_id) REFERENCES public.users(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addSupplierForeignKeys(string $schema): void
+    {
+        DB::statement("ALTER TABLE \"{$schema}\".suppliers DROP CONSTRAINT IF EXISTS suppliers_organization_id_foreign");
+        DB::statement("ALTER TABLE \"{$schema}\".suppliers ADD CONSTRAINT suppliers_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE");
+    }
+
+    protected static function addProductForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".products DROP CONSTRAINT IF EXISTS products_organization_id_foreign",
+            "ALTER TABLE \"{$schema}\".products ADD CONSTRAINT products_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE",
+            "ALTER TABLE \"{$schema}\".products DROP CONSTRAINT IF EXISTS products_supplier_id_foreign",
+            "ALTER TABLE \"{$schema}\".products ADD CONSTRAINT products_supplier_id_foreign FOREIGN KEY (supplier_id) REFERENCES \"{$schema}\".suppliers(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addInventoryItemForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".inventory_items DROP CONSTRAINT IF EXISTS inventory_items_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".inventory_items ADD CONSTRAINT inventory_items_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE CASCADE",
+            "ALTER TABLE \"{$schema}\".inventory_items DROP CONSTRAINT IF EXISTS inventory_items_product_id_foreign",
+            "ALTER TABLE \"{$schema}\".inventory_items ADD CONSTRAINT inventory_items_product_id_foreign FOREIGN KEY (product_id) REFERENCES \"{$schema}\".products(id) ON DELETE CASCADE",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addStockMovementForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".stock_movements DROP CONSTRAINT IF EXISTS stock_movements_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_movements ADD CONSTRAINT stock_movements_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".stock_movements DROP CONSTRAINT IF EXISTS stock_movements_product_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_movements ADD CONSTRAINT stock_movements_product_id_foreign FOREIGN KEY (product_id) REFERENCES \"{$schema}\".products(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".stock_movements DROP CONSTRAINT IF EXISTS stock_movements_supplier_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_movements ADD CONSTRAINT stock_movements_supplier_id_foreign FOREIGN KEY (supplier_id) REFERENCES \"{$schema}\".suppliers(id) ON DELETE SET NULL",
+            "ALTER TABLE \"{$schema}\".stock_movements DROP CONSTRAINT IF EXISTS stock_movements_user_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_movements ADD CONSTRAINT stock_movements_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addStockTransferRequestForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests DROP CONSTRAINT IF EXISTS stock_transfer_requests_from_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests ADD CONSTRAINT stock_transfer_requests_from_pos_id_foreign FOREIGN KEY (from_pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests DROP CONSTRAINT IF EXISTS stock_transfer_requests_to_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests ADD CONSTRAINT stock_transfer_requests_to_pos_id_foreign FOREIGN KEY (to_pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests DROP CONSTRAINT IF EXISTS stock_transfer_requests_requested_by_user_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests ADD CONSTRAINT stock_transfer_requests_requested_by_user_id_foreign FOREIGN KEY (requested_by_user_id) REFERENCES public.users(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests DROP CONSTRAINT IF EXISTS stock_transfer_requests_product_id_foreign",
+            "ALTER TABLE \"{$schema}\".stock_transfer_requests ADD CONSTRAINT stock_transfer_requests_product_id_foreign FOREIGN KEY (product_id) REFERENCES \"{$schema}\".products(id) ON DELETE RESTRICT",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addLacSupplyScheduleForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".lac_supply_schedules DROP CONSTRAINT IF EXISTS lac_supply_schedules_patient_id_foreign",
+            "ALTER TABLE \"{$schema}\".lac_supply_schedules ADD CONSTRAINT lac_supply_schedules_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE CASCADE",
+            "ALTER TABLE \"{$schema}\".lac_supply_schedules DROP CONSTRAINT IF EXISTS lac_supply_schedules_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".lac_supply_schedules ADD CONSTRAINT lac_supply_schedules_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".lac_supply_schedules DROP CONSTRAINT IF EXISTS lac_supply_schedules_product_id_foreign",
+            "ALTER TABLE \"{$schema}\".lac_supply_schedules ADD CONSTRAINT lac_supply_schedules_product_id_foreign FOREIGN KEY (product_id) REFERENCES \"{$schema}\".products(id) ON DELETE RESTRICT",
         ];
         foreach ($sql as $s) {
             DB::statement($s);

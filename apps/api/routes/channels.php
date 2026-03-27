@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\DeviceSession;
+use App\Models\UserPosRole;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -29,4 +30,10 @@ Broadcast::channel('session.{sessionId}', function ($user, string $sessionId) {
     $session = DeviceSession::find($sessionId);
 
     return $session && (int) $session->user_id === (int) $user->id;
+});
+
+Broadcast::channel('pos.{posId}', function ($user, string $posId) {
+    return UserPosRole::where('user_id', $user->id)
+        ->where('pos_id', $posId)
+        ->exists();
 });

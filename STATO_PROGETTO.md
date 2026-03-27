@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-26 (sessione 10)
+> Aggiornato: 2026-03-27 (sessione 11)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -132,19 +132,19 @@
 ---
 
 ## Fase 3 — Magazzino
-**Target: Settimane 8-9 | Stato: ⬜ Non iniziato**
+**Target: Settimane 8-9 | Stato: 🟡 In corso**
 
-⬜ Migrations `products`, `inventory_items`, `suppliers`
-⬜ Attributi flessibili via jsonb (colore, materiale, genere, forma)
-⬜ Categorie prodotti (montature, lenti, LAC, accessori)
-⬜ CRUD prodotto + fornitori
-⬜ Movimenti di magazzino (carico, scarico, rettifica)
+✅ Migrations tenant: `suppliers`, `products`, `inventory_items`, `stock_movements`, `stock_transfer_requests`, `lac_supply_schedules` (via `TenantClinicalSchema`) — 2026-03-27
+✅ Model `Supplier`, `Product`, `InventoryItem`, `StockMovement`, `StockTransferRequest`, `LacSupplySchedule` (HasUuids + relazioni + cifratura `products.purchase_price`) — 2026-03-27
+✅ API: `SupplierController` CRUD + filtro categoria; `ProductController` CRUD + ricerca + paginazione 20 — 2026-03-27
+✅ API: `InventoryController` (index, update stock, movimenti) + `StockMovementController` (index/store carico manuale con DDT) — 2026-03-27
+✅ API: `StockTransferController` flusso richiesta → accettazione/rifiuto → completamento — 2026-03-27
+✅ `DdtService` + template Blade `pdf/ddt_transfer` + salvataggio storage locale — 2026-03-27
+✅ WebSocket trasferimenti: evento `PosTransferUpdated` + channel privato `pos.{posId}` — 2026-03-27
+✅ Scadenzario LAC: model `LacSupplySchedule::calculateEndDate()` + scope `expiringSoon()` — 2026-03-27
+✅ Test feature `InventoryFeatureTest` aggiunto (CRUD prodotto cifrato, carico DDT, trasferimento completo, calcolo scadenza LAC) — 2026-03-27
 ⬜ Alert scorte minime per prodotto/POS
 ⬜ Visibilità stock altri POS (con permesso `inventory.view_other_pos_stock`)
-⬜ Migration `stock_transfer_requests` + flusso completo richiesta→DDT→completamento
-⬜ Generazione DDT PDF automatica con numero progressivo
-⬜ Notifiche WebSocket real-time tra POS
-⬜ Migration `lac_supply_schedules` + calcolo data esaurimento
 ⬜ Dashboard "scadenze LAC questa settimana"
 ⬜ Reminder automatici paziente LAC
 

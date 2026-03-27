@@ -87,6 +87,11 @@ class Patient extends Model
         return $this->hasMany(LacExam::class);
     }
 
+    public function lacSupplySchedules(): HasMany
+    {
+        return $this->hasMany(LacSupplySchedule::class);
+    }
+
     public function scopeSearch($query, ?string $term)
     {
         if ($term === null || $term === '') {

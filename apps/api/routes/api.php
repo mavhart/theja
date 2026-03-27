@@ -2,10 +2,15 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ClinicalPdfController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LacExamController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionOcrController;
 use App\Http\Controllers\PrescriptionController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
@@ -79,4 +84,21 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::post('/lac-exams', [LacExamController::class, 'store']);
     Route::get('/lac-exams/{lacExam}', [LacExamController::class, 'show']);
     Route::put('/lac-exams/{lacExam}', [LacExamController::class, 'update']);
+
+    // ─── Magazzino (Fase 3) ────────────────────────────────────────────────
+    Route::apiResource('suppliers', SupplierController::class);
+    Route::apiResource('products', ProductController::class);
+
+    Route::get('/inventory', [InventoryController::class, 'index']);
+    Route::post('/inventory/update-stock', [InventoryController::class, 'updateStock']);
+    Route::get('/inventory/movements', [InventoryController::class, 'movements']);
+
+    Route::get('/stock-movements', [StockMovementController::class, 'index']);
+    Route::post('/stock-movements', [StockMovementController::class, 'store']);
+
+    Route::get('/stock-transfers', [StockTransferController::class, 'index']);
+    Route::post('/stock-transfers/request', [StockTransferController::class, 'requestTransfer']);
+    Route::post('/stock-transfers/{transfer}/accept', [StockTransferController::class, 'accept']);
+    Route::post('/stock-transfers/{transfer}/reject', [StockTransferController::class, 'reject']);
+    Route::post('/stock-transfers/{transfer}/complete', [StockTransferController::class, 'complete']);
 });
