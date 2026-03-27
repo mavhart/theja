@@ -63,7 +63,7 @@ function formatPrescriptionForTooltip(p: ApiPrescription): string {
 }
 
 export default function PrescriptionChart({ prescriptions }: PrescriptionChartProps) {
-  if (prescriptions.length < 2) {
+  if (prescriptions.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
         Nessuna prescrizione registrata
@@ -72,6 +72,8 @@ export default function PrescriptionChart({ prescriptions }: PrescriptionChartPr
   }
 
   const data = buildRows(prescriptions);
+  const isSinglePoint = data.length === 1;
+  const dot = isSinglePoint ? { r: 4 } : false;
 
   return (
     <div className="w-full rounded-xl border border-border bg-card p-4">
@@ -98,13 +100,18 @@ export default function PrescriptionChart({ prescriptions }: PrescriptionChartPr
               }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line type="monotone" dataKey="od_sphere_far" name="Sfera OD" stroke="#2563eb" dot={false} strokeWidth={2} connectNulls />
-            <Line type="monotone" dataKey="os_sphere_far" name="Sfera OS" stroke="#16a34a" dot={false} strokeWidth={2} connectNulls />
-            <Line type="monotone" dataKey="od_cylinder_far" name="Cilindro OD" stroke="#ea580c" dot={false} strokeWidth={2} connectNulls />
-            <Line type="monotone" dataKey="os_cylinder_far" name="Cilindro OS" stroke="#9333ea" dot={false} strokeWidth={2} connectNulls />
+            <Line type="monotone" dataKey="od_sphere_far" name="Sfera OD" stroke="#2563eb" dot={dot} strokeWidth={2} connectNulls />
+            <Line type="monotone" dataKey="os_sphere_far" name="Sfera OS" stroke="#16a34a" dot={dot} strokeWidth={2} connectNulls />
+            <Line type="monotone" dataKey="od_cylinder_far" name="Cilindro OD" stroke="#ea580c" dot={dot} strokeWidth={2} connectNulls />
+            <Line type="monotone" dataKey="os_cylinder_far" name="Cilindro OS" stroke="#9333ea" dot={dot} strokeWidth={2} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      {isSinglePoint && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Aggiungi altre prescrizioni per vedere la progressione nel tempo
+        </p>
+      )}
     </div>
   );
 }
