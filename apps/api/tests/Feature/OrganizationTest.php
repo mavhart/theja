@@ -79,7 +79,7 @@ class OrganizationTest extends TestCase
         $org = Organization::factory()->create();
         $pos = PointOfSale::factory()->create(['organization_id' => $org->id]);
 
-        $this->assertFalse($pos->has_virtual_cash_register);
+        $this->assertFalse($pos->virtual_cash_register_enabled);
         $this->assertFalse($pos->cash_register_hardware_configured);
         $this->assertFalse($pos->ai_analysis_enabled);
         $this->assertEquals(1, $pos->max_concurrent_web_sessions);

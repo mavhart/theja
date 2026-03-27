@@ -23,7 +23,10 @@ class PointOfSaleFactory extends Factory
             'fiscal_code'                     => null,
             'vat_number'                      => null,
             'has_local_manager'               => true,
-            'has_virtual_cash_register'       => false,
+            'virtual_cash_register_enabled'   => false,
+            'rt_provider'                     => null,
+            'rt_credentials'                  => null,
+            'sumup_api_key'                   => null,
             'cash_register_hardware_configured' => false,
             'ai_analysis_enabled'             => false,
             'max_concurrent_web_sessions'     => 1,
@@ -35,7 +38,7 @@ class PointOfSaleFactory extends Factory
     /** POS con cassa virtuale attiva */
     public function withVirtualCashRegister(): static
     {
-        return $this->state(['has_virtual_cash_register' => true]);
+        return $this->state(['virtual_cash_register_enabled' => true]);
     }
 
     /** POS con AI Analysis attiva */

@@ -677,6 +677,42 @@ export interface ApiInvoice {
   items?: ApiInvoiceItem[];
 }
 
+export interface ApiCashRegisterSession {
+  id: string;
+  pos_id: string;
+  user_id: number;
+  opened_at: string;
+  closed_at?: string | null;
+  opening_amount: string | number;
+  closing_amount?: string | number | null;
+  total_sales: string | number;
+  total_cash: string | number;
+  total_card: string | number;
+  total_other: string | number;
+  notes?: string | null;
+  status: 'open' | 'closed';
+}
+
+export interface ApiFiscalReceipt {
+  id: string;
+  pos_id: string;
+  sale_id?: string | null;
+  cash_register_session_id?: string | null;
+  receipt_number: string;
+  receipt_date: string;
+  type: 'scontrino' | 'ricevuta' | 'fattura_accompagnatoria';
+  total_amount: string | number;
+  vat_breakdown: Record<string, number>;
+  payment_method: string;
+  rt_provider?: string | null;
+  rt_response?: Record<string, unknown> | null;
+  rt_sent_at?: string | null;
+  ade_transmitted_at?: string | null;
+  status: 'pending' | 'sent' | 'accepted' | 'error';
+  error_message?: string | null;
+  sale?: ApiSale | null;
+}
+
 export interface ApiLabelField {
   key: 'barcode' | 'barcode_number' | 'brand' | 'model' | 'caliber_bridge' | 'color' | 'sale_price' | 'supplier';
   label: string;
@@ -1149,6 +1185,72 @@ export async function getCommunicationLogs(
 
 export async function getBirthdayPatients(): Promise<{ data: PaginatedPatients; status: number }> {
   return apiRequest<PaginatedPatients>('/patients?birthday_today=1&per_page=50');
+}
+
+export async function getCashRegisterSession(posId?: string): Promise<{ data: { data: ApiCashRegisterSession | null }; status: number }> {
+  const q = new URLSearchParams();
+  if (posId) q.set('pos_id', posId);
+  return apiRequest<{ data: ApiCashRegisterSession | null }>(`/cash-register/session${q.toString() ? `?${q.toString()}` : ''}`);
+}
+
+export async function openCashRegisterSession(payload: { pos_id?: string; opening_amount: number }): Promise<{ data: { data: ApiCashRegisterSession }; status: number }> {
+  return apiRequest<{ data: ApiCashRegisterSession }>('/cash-register/open', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function closeCashRegisterSession(payload: {
+  pos_id?: string;
+  session_id?: string;
+  closing_amount: number;
+  notes?: string;
+}): Promise<{ data: { data: ApiCashRegisterSession }; status: number }> {
+  return apiRequest<{ data: ApiCashRegisterSession }>('/cash-register/close', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getCashRegisterSummary(posId?: string): Promise<{ data: { data: { session: ApiCashRegisterSession | null; receipts: ApiFiscalReceipt[] } }; status: number }> {
+  const q = new URLSearchParams();
+  if (posId) q.set('pos_id', posId);
+  return apiRequest<{ data: { session: ApiCashRegisterSession | null; receipts: ApiFiscalReceipt[] } }>(`/cash-register/summary${q.toString() ? `?${q.toString()}` : ''}`);
+}
+
+export async function emitFiscalDocument(payload: {
+  sale_id: string;
+  type?: 'scontrino' | 'ricevuta' | 'fattura_accompagnatoria';
+}): Promise<{ data: { data: ApiFiscalReceipt }; status: number }> {
+  return apiRequest<{ data: ApiFiscalReceipt }>('/cash-register/fiscal-document', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createSumupPayment(payload: {
+  pos_id?: string;
+  amount: number;
+  currency?: string;
+  description?: string;
+}): Promise<{ data: { data: Record<string, unknown> }; status: number }> {
+  return apiRequest<{ data: Record<string, unknown> }>('/payments/sumup/create', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getSumupPaymentStatus(id: string, posId?: string): Promise<{ data: { data: Record<string, unknown> }; status: number }> {
+  const q = new URLSearchParams();
+  if (posId) q.set('pos_id', posId);
+  return apiRequest<{ data: Record<string, unknown> }>(`/payments/sumup/${id}/status${q.toString() ? `?${q.toString()}` : ''}`);
+}
+
+export async function refundSumupPayment(id: string, payload: { pos_id?: string; amount: number }): Promise<{ data: { data: Record<string, unknown> }; status: number }> {
+  return apiRequest<{ data: Record<string, unknown> }>(`/payments/sumup/${id}/refund`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */

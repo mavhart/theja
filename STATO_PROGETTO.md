@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-27 (sessione 15)
+> Aggiornato: 2026-03-27 (sessione 16)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -208,13 +208,17 @@
 ---
 
 ## Fase 7 — Cassa virtuale e Pagamenti
-**Target: Settimane 18-21 | Stato: ⬜ Non iniziato**
+**Target: Settimane 18-21 | Stato: ✅ Completata (backend + frontend base + provider pattern)**
 
-⬜ Integrazione API provider RT Software certificato (da scegliere — vedi Decisioni pendenti)
-⬜ Emissione scontrino fiscale virtuale + corrispettivi elettronici AdE
-⬜ Gestione chiusura giornaliera
-⬜ SumUp API — pagamento carta al banco + riconciliazione automatica
-⬜ Placeholder data model pagamento online Stripe (no UI in v1)
+✅ Migration tenant: `cash_register_sessions`, `fiscal_receipts` + FK tenant/public via `TenantClinicalSchema` — 2026-03-27
+✅ Migration alter `points_of_sale`: rename `has_virtual_cash_register` → `virtual_cash_register_enabled`, aggiunta `rt_provider`, `rt_credentials` (encrypted), `sumup_api_key` (encrypted) — 2026-03-27
+✅ Model `CashRegisterSession` + `FiscalReceipt` (scope `pending/sent`, helper `isOpen`, accessor totali) — 2026-03-27
+✅ `VirtualCashRegisterService` (open/close session, sessione corrente, riepilogo, invio documento fiscale) — 2026-03-27
+✅ Pattern provider RT: `RtProviderInterface`, `RtProviderFactory`, `LogRtProvider` default per dev/staging — 2026-03-27
+✅ `SumUpService` con modalità mock staging/local (`createPayment`, `getPaymentStatus`, `refund`) — 2026-03-27
+✅ API: `CashRegisterController` + `SumUpController` con endpoint `/api/cash-register/*` e `/api/payments/sumup/*` — 2026-03-27
+✅ Frontend: pagina `/cassa`, modale `SumUpPaymentModal`, placeholder `/impostazioni/pos` — 2026-03-27
+✅ Config `.env(.example)`: `SUMUP_API_URL`, `VIRTUAL_CASH_REGISTER_ENABLED`, `RT_PROVIDER` — 2026-03-27
 
 ---
 
@@ -260,12 +264,12 @@
 
 ## Prossimo task da eseguire
 
-**Fase 5 — Fatturazione (hardening + integrazioni esterne)**
+**Fase 8 — Reportistica e AI**
 
 Prossimi task in ordine:
-1. **Conservazione digitale** — storage S3 + retention documenti fiscali
-2. **Collaudo MEF** — validazione/invio ambiente test tessera sanitaria
-3. **Automazione invio TS** — job mensile con audit completo
+1. **Query builder visuale** — filtri, tabella, export Excel/PDF, grafici
+2. **Dashboard POS avanzata** — vendite giornaliere/mensili, alert, appuntamenti
+3. **Reportistica aggregata org + AI analysis** — reporting multi-POS e query assistite
 
 ---
 

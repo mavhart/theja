@@ -11,6 +11,7 @@ use App\Http\Controllers\LabelTemplateController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\CommunicationTemplateController;
 use App\Http\Controllers\CommunicationLogController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionOcrController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\SumUpController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\CheckFeatureActive;
@@ -158,4 +160,15 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::apiResource('communication-templates', CommunicationTemplateController::class);
     Route::get('/communication-logs', [CommunicationLogController::class, 'index']);
     Route::get('/communication-logs/{communicationLog}', [CommunicationLogController::class, 'show']);
+
+    // ─── Cassa virtuale e pagamenti (Fase 7) ──────────────────────────────────
+    Route::get('/cash-register/session', [CashRegisterController::class, 'session']);
+    Route::post('/cash-register/open', [CashRegisterController::class, 'open']);
+    Route::post('/cash-register/close', [CashRegisterController::class, 'close']);
+    Route::get('/cash-register/summary', [CashRegisterController::class, 'summary']);
+    Route::post('/cash-register/fiscal-document', [CashRegisterController::class, 'fiscalDocument']);
+
+    Route::post('/payments/sumup/create', [SumUpController::class, 'create']);
+    Route::get('/payments/sumup/{id}/status', [SumUpController::class, 'status']);
+    Route::post('/payments/sumup/{id}/refund', [SumUpController::class, 'refund']);
 });

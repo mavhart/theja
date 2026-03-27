@@ -21,7 +21,10 @@ class PointOfSale extends Model
         'fiscal_code',
         'vat_number',
         'has_local_manager',
-        'has_virtual_cash_register',
+        'virtual_cash_register_enabled',
+        'rt_provider',
+        'rt_credentials',
+        'sumup_api_key',
         'cash_register_hardware_configured',
         'ai_analysis_enabled',
         'max_concurrent_web_sessions',
@@ -33,7 +36,9 @@ class PointOfSale extends Model
     {
         return [
             'has_local_manager'               => 'boolean',
-            'has_virtual_cash_register'       => 'boolean',
+            'virtual_cash_register_enabled'   => 'boolean',
+            'rt_credentials'                  => 'encrypted',
+            'sumup_api_key'                   => 'encrypted',
             'cash_register_hardware_configured' => 'boolean',
             'ai_analysis_enabled'             => 'boolean',
             'max_concurrent_web_sessions'     => 'integer',

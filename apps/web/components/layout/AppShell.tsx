@@ -54,6 +54,14 @@ const icons = {
       <line x1="3"  y1="10" x2="21" y2="10" />
     </svg>
   ),
+  cashRegister: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 9h10" />
+      <path d="M8 14h2" />
+      <path d="M12 14h4" />
+    </svg>
+  ),
   settings: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5">
       <circle cx="12" cy="12" r="3" />
@@ -103,6 +111,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { href: '/vendite',    label: 'Vendite',    icon: icons.sales      },
+  { href: '/cassa',      label: 'Cassa',      icon: icons.cashRegister },
   { href: '/agenda',     label: 'Agenda',     icon: icons.agenda     },
   {
     href: '/fatture',

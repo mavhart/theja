@@ -103,6 +103,14 @@ class TenantClinicalSchema
             self::createCommunicationLogsTable();
             self::addCommunicationLogsForeignKeys($schema);
         }
+        if (! Schema::hasTable('cash_register_sessions')) {
+            self::createCashRegisterSessionsTable();
+            self::addCashRegisterSessionsForeignKeys($schema);
+        }
+        if (! Schema::hasTable('fiscal_receipts')) {
+            self::createFiscalReceiptsTable();
+            self::addFiscalReceiptsForeignKeys($schema);
+        }
 
         DB::statement('SET search_path TO public');
     }
@@ -336,6 +344,25 @@ class TenantClinicalSchema
         }
     }
 
+    public static function provisionCashRegisterForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+
+            if (! Schema::hasTable('cash_register_sessions')) {
+                self::createCashRegisterSessionsTable();
+                self::addCashRegisterSessionsForeignKeys($schema);
+            }
+            if (! Schema::hasTable('fiscal_receipts')) {
+                self::createFiscalReceiptsTable();
+                self::addFiscalReceiptsForeignKeys($schema);
+            }
+
+            DB::statement('SET search_path TO public');
+        }
+    }
+
     public static function dropPatientsForAllOrganizations(): void
     {
         foreach (DB::table('organizations')->pluck('id') as $id) {
@@ -496,6 +523,17 @@ class TenantClinicalSchema
             Schema::dropIfExists('appointments');
             Schema::dropIfExists('communication_logs');
             Schema::dropIfExists('communication_templates');
+            DB::statement('SET search_path TO public');
+        }
+    }
+
+    public static function dropCashRegisterForAllOrganizations(): void
+    {
+        foreach (DB::table('organizations')->pluck('id') as $id) {
+            $schema = self::schemaNameForOrganizationId((string) $id);
+            DB::statement('SET search_path TO "'.$schema.'", public');
+            Schema::dropIfExists('fiscal_receipts');
+            Schema::dropIfExists('cash_register_sessions');
             DB::statement('SET search_path TO public');
         }
     }
@@ -1107,6 +1145,54 @@ class TenantClinicalSchema
         });
     }
 
+    public static function createCashRegisterSessionsTable(): void
+    {
+        Schema::create('cash_register_sessions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id');
+            $table->foreignId('user_id');
+            $table->timestamp('opened_at');
+            $table->timestamp('closed_at')->nullable();
+            $table->decimal('opening_amount', 10, 2)->default(0);
+            $table->decimal('closing_amount', 10, 2)->nullable();
+            $table->decimal('total_sales', 10, 2)->default(0);
+            $table->decimal('total_cash', 10, 2)->default(0);
+            $table->decimal('total_card', 10, 2)->default(0);
+            $table->decimal('total_other', 10, 2)->default(0);
+            $table->text('notes')->nullable();
+            $table->enum('status', ['open', 'closed'])->default('open');
+            $table->timestamps();
+
+            $table->index(['pos_id', 'opened_at']);
+        });
+    }
+
+    public static function createFiscalReceiptsTable(): void
+    {
+        Schema::create('fiscal_receipts', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_id');
+            $table->uuid('sale_id')->nullable()->index();
+            $table->uuid('cash_register_session_id')->nullable()->index();
+            $table->string('receipt_number');
+            $table->date('receipt_date');
+            $table->enum('type', ['scontrino', 'ricevuta', 'fattura_accompagnatoria'])->default('scontrino');
+            $table->decimal('total_amount', 10, 2);
+            $table->jsonb('vat_breakdown')->default('{}');
+            $table->string('payment_method');
+            $table->string('rt_provider')->nullable();
+            $table->jsonb('rt_response')->nullable();
+            $table->timestamp('rt_sent_at')->nullable();
+            $table->timestamp('ade_transmitted_at')->nullable();
+            $table->enum('status', ['pending', 'sent', 'accepted', 'error'])->default('pending');
+            $table->text('error_message')->nullable();
+            $table->timestamps();
+
+            $table->index(['pos_id', 'receipt_date']);
+            $table->unique(['pos_id', 'receipt_number']);
+        });
+    }
+
     protected static function addPatientForeignKeys(string $schema): void
     {
         $sql = [
@@ -1371,6 +1457,34 @@ class TenantClinicalSchema
             "ALTER TABLE \"{$schema}\".communication_logs ADD CONSTRAINT communication_logs_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE SET NULL",
             "ALTER TABLE \"{$schema}\".communication_logs DROP CONSTRAINT IF EXISTS communication_logs_patient_id_foreign",
             "ALTER TABLE \"{$schema}\".communication_logs ADD CONSTRAINT communication_logs_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE SET NULL",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addCashRegisterSessionsForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".cash_register_sessions DROP CONSTRAINT IF EXISTS cash_register_sessions_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".cash_register_sessions ADD CONSTRAINT cash_register_sessions_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".cash_register_sessions DROP CONSTRAINT IF EXISTS cash_register_sessions_user_id_foreign",
+            "ALTER TABLE \"{$schema}\".cash_register_sessions ADD CONSTRAINT cash_register_sessions_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE RESTRICT",
+        ];
+        foreach ($sql as $s) {
+            DB::statement($s);
+        }
+    }
+
+    protected static function addFiscalReceiptsForeignKeys(string $schema): void
+    {
+        $sql = [
+            "ALTER TABLE \"{$schema}\".fiscal_receipts DROP CONSTRAINT IF EXISTS fiscal_receipts_pos_id_foreign",
+            "ALTER TABLE \"{$schema}\".fiscal_receipts ADD CONSTRAINT fiscal_receipts_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
+            "ALTER TABLE \"{$schema}\".fiscal_receipts DROP CONSTRAINT IF EXISTS fiscal_receipts_sale_id_foreign",
+            "ALTER TABLE \"{$schema}\".fiscal_receipts ADD CONSTRAINT fiscal_receipts_sale_id_foreign FOREIGN KEY (sale_id) REFERENCES \"{$schema}\".sales(id) ON DELETE SET NULL",
+            "ALTER TABLE \"{$schema}\".fiscal_receipts DROP CONSTRAINT IF EXISTS fiscal_receipts_cash_register_session_id_foreign",
+            "ALTER TABLE \"{$schema}\".fiscal_receipts ADD CONSTRAINT fiscal_receipts_cash_register_session_id_foreign FOREIGN KEY (cash_register_session_id) REFERENCES \"{$schema}\".cash_register_sessions(id) ON DELETE SET NULL",
         ];
         foreach ($sql as $s) {
             DB::statement($s);
