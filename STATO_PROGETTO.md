@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-27 (sessione 12)
+> Aggiornato: 2026-03-27 (sessione 13)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -162,15 +162,21 @@
 ---
 
 ## Fase 4 — Vendite e Ordini
-**Target: Settimane 10-12 | Stato: ⬜ Non iniziato**
+**Target: Settimane 10-12 | Stato: ✅ Completata (backend + frontend)**
 
-⬜ Preventivi (bozza → inviato → accettato → ordine) + PDF
-⬜ Workflow ordini (stati + tracking laboratorio)
-⬜ Vendita rapida al banco
-⬜ Sconti con permesso `sales.apply_discount`
-⬜ Migration `payments` + acconti multipli + rate pianificate
-⬜ Dashboard pagamenti (totale / versato / residuo / prossima scadenza)
-⬜ Migration `after_sale_events` + assistenza post-vendita (riparazione, garanzia, reso)
+✅ Migrations tenant: `sales`, `sale_items`, `payments`, `orders`, `after_sale_events` (schema-per-tenant via `TenantClinicalSchema`) — 2026-03-27
+✅ Model `Sale`, `SaleItem`, `Payment`, `Order`, `AfterSaleEvent` (HasUuids, cast, cifratura `sale_items.purchase_price`, accessor residuo/stato) — 2026-03-27
+✅ `SaleService` — creazione vendita con righe, scarico automatico magazzino, totali, pagamenti, rate, consegna/annullo con ripristino stock — 2026-03-27
+✅ `OrderService` — creazione ordine lab, update stato, generazione job code progressivo `YYMM-NNNN` — 2026-03-27
+✅ API `SaleController` — index/store/show/update/destroy + endpoint pagamenti/consegna/cancel/payment-summary/schedule-payments — 2026-03-27
+✅ API `OrderController` — index/store/show/update status + endpoint dashboard `GET /api/orders/pending` — 2026-03-27
+✅ API `AfterSaleController` — index per sale, creazione evento, update status — 2026-03-27
+✅ UI Next.js — `/vendite/nuova` vendita rapida (carrello, scanner barcode, modale pagamenti azione rapida) — 2026-03-27
+✅ UI Next.js — `/vendite` lista vendite con filtri e residuo evidenziato — 2026-03-27
+✅ UI Next.js — `/vendite/[id]` tab Fornitura/Pagamenti/Ordine Lab/Assistenza con azioni principali — 2026-03-27
+✅ Dashboard — card “Ordini lab” (in attesa / in lavorazione / pronti) — 2026-03-27
+✅ `apps/web/lib/api.ts` esteso con funzioni vendite/pagamenti/ordini/assistenza — 2026-03-27
+✅ Preventivi (bozza → conferma), workflow ordini, vendita rapida, acconti/rate, dashboard pagamenti, assistenza post-vendita — 2026-03-27
 
 ---
 

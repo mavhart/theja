@@ -1,16 +1,19 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\AfterSaleController;
 use App\Http\Controllers\ClinicalPdfController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LacExamController;
 use App\Http\Controllers\LacScheduleController;
 use App\Http\Controllers\LabelPrintController;
 use App\Http\Controllers\LabelTemplateController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionOcrController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierController;
@@ -112,4 +115,22 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::post('/stock-transfers/{transfer}/complete', [StockTransferController::class, 'complete']);
 
     Route::get('/lac-schedules', [LacScheduleController::class, 'index']);
+
+    // ─── Vendite e Ordini (Fase 4) ───────────────────────────────────────
+    Route::apiResource('sales', SaleController::class);
+    Route::post('/sales/{sale}/payments', [SaleController::class, 'addPayment']);
+    Route::post('/sales/{sale}/schedule-payments', [SaleController::class, 'schedulePayments']);
+    Route::post('/sales/{sale}/deliver', [SaleController::class, 'deliver']);
+    Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel']);
+    Route::get('/sales/{sale}/payment-summary', [SaleController::class, 'paymentSummary']);
+
+    Route::get('/orders/pending', [OrderController::class, 'pending']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+
+    Route::get('/after-sale-events', [AfterSaleController::class, 'index']);
+    Route::post('/after-sale-events', [AfterSaleController::class, 'store']);
+    Route::post('/after-sale-events/{afterSaleEvent}/status', [AfterSaleController::class, 'updateStatus']);
 });

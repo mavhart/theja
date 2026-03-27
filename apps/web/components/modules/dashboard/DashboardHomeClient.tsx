@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getLacSchedules, type ApiLacSchedule } from '@/lib/api';
+import { getLacSchedules, getPendingOrdersDashboard, type ApiLacSchedule } from '@/lib/api';
 
 interface StatCard {
   label:       string;
@@ -13,6 +13,7 @@ interface StatCard {
 export default function DashboardHomeClient({ statCards }: { statCards: StatCard[] }) {
   const [lacRows, setLacRows] = useState<ApiLacSchedule[]>([]);
   const [lacLoading, setLacLoading] = useState(true);
+  const [orders, setOrders] = useState({ sent: 0, in_progress: 0, ready: 0 });
 
   useEffect(() => {
     getLacSchedules({ expiring_days: 7 })
@@ -20,6 +21,16 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
         if (status === 200) setLacRows(data.data ?? []);
       })
       .finally(() => setLacLoading(false));
+
+    getPendingOrdersDashboard().then(({ status, data }) => {
+      if (status === 200) {
+        setOrders({
+          sent: data.data.sent ?? 0,
+          in_progress: data.data.in_progress ?? 0,
+          ready: data.data.ready ?? 0,
+        });
+      }
+    });
   }, []);
 
   return (
@@ -77,7 +88,23 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
         </div>
 
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm min-h-[200px] flex items-center justify-center">
-          <p className="text-sm text-zinc-400 dark:text-zinc-500">Ultime vendite — disponibile dalla Fase 4</p>
+          <div className="w-full space-y-3">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Ordini lab</h2>
+            <div className="grid grid-cols-1 gap-2 text-sm">
+              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 flex items-center justify-between">
+                <span>In attesa lavorazione</span>
+                <span className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-semibold">{orders.sent}</span>
+              </div>
+              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 flex items-center justify-between">
+                <span>In lavorazione</span>
+                <span className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-semibold">{orders.in_progress}</span>
+              </div>
+              <div className="rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/20 p-2 flex items-center justify-between">
+                <span>Pronti da consegnare</span>
+                <span className="rounded-full bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">{orders.ready}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

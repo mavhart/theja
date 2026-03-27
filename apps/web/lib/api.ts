@@ -445,6 +445,107 @@ export interface ApiLacSchedule {
   [key: string]: unknown;
 }
 
+export interface ApiSaleItem {
+  id: string;
+  sale_id: string;
+  product_id?: string | null;
+  description: string;
+  quantity: number;
+  unit_price: string | number;
+  purchase_price?: string | number | null;
+  discount_percent: string | number;
+  discount_amount: string | number;
+  total: string | number;
+  vat_rate: string | number;
+  vat_code?: string | null;
+  sts_code?: string | null;
+  lot?: string | null;
+  item_type: 'montatura' | 'lente_dx' | 'lente_sx' | 'lente_contatto' | 'accessorio' | 'servizio' | 'altro';
+  notes?: string | null;
+  product?: ApiProduct | null;
+}
+
+export interface ApiPayment {
+  id: string;
+  sale_id: string;
+  amount: string | number;
+  method: 'contanti' | 'carta' | 'bonifico' | 'assegno' | 'altro';
+  payment_date: string;
+  is_scheduled: boolean;
+  scheduled_date?: string | null;
+  paid_at?: string | null;
+  receipt_number?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface ApiSale {
+  id: string;
+  pos_id: string;
+  patient_id?: string | null;
+  user_id: number;
+  status: 'quote' | 'confirmed' | 'delivered' | 'cancelled';
+  type: 'occhiale_vista' | 'occhiale_sole' | 'sostituzione_lenti' | 'sostituzione_montatura' | 'lac' | 'accessorio' | 'servizio' | 'generico';
+  sale_date: string;
+  delivery_date?: string | null;
+  notes?: string | null;
+  discount_amount: string | number;
+  total_amount: string | number;
+  paid_amount: string | number;
+  remaining_amount?: string | number;
+  is_fully_paid?: boolean;
+  status_label?: string;
+  prescription_id?: string | null;
+  patient?: ApiPatient | null;
+  user?: ApiUser | null;
+  items?: ApiSaleItem[];
+  payments?: ApiPayment[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiOrder {
+  id: string;
+  pos_id: string;
+  sale_id?: string | null;
+  patient_id?: string | null;
+  user_id: number;
+  lab_supplier_id?: string | null;
+  status: 'draft' | 'sent' | 'in_progress' | 'ready' | 'delivered' | 'cancelled';
+  order_date: string;
+  expected_delivery_date?: string | null;
+  actual_delivery_date?: string | null;
+  job_code?: string | null;
+  frame_barcode?: string | null;
+  frame_description?: string | null;
+  lens_right_product_id?: string | null;
+  lens_left_product_id?: string | null;
+  lens_right_description?: string | null;
+  lens_left_description?: string | null;
+  prescription_id?: string | null;
+  mounting_type?: string | null;
+  notes?: string | null;
+  internal_notes?: string | null;
+  total_amount: string | number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiAfterSaleEvent {
+  id: string;
+  sale_id: string;
+  sale_item_id?: string | null;
+  type: 'riparazione' | 'garanzia' | 'reso' | 'adattamento' | 'altro';
+  description: string;
+  status: 'aperto' | 'inviato_lab' | 'rientrato' | 'chiuso';
+  opened_at: string;
+  closed_at?: string | null;
+  cost?: string | number | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ApiLabelField {
   key: 'barcode' | 'barcode_number' | 'brand' | 'model' | 'caliber_bridge' | 'color' | 'sale_price' | 'supplier';
   label: string;
@@ -487,6 +588,23 @@ export interface PrintLabelsPayload {
   template_id: string;
   start_position?: number;
   copies?: number;
+}
+
+export interface GetSalesParams {
+  status?: string;
+  patient_id?: string;
+  type?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+}
+
+export interface GetOrdersParams {
+  status?: string;
+  lab_supplier_id?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
 }
 
 export async function scanPrescriptionOcr(
@@ -664,6 +782,89 @@ export async function printLabelsPdf(
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export async function getSales(
+  params: GetSalesParams = {},
+): Promise<{ data: { data: ApiSale[]; meta?: LaravelPaginationMeta }; status: number }> {
+  const q = new URLSearchParams({ page: String(params.page ?? 1), per_page: '20' });
+  if (params.status) q.set('status', params.status);
+  if (params.patient_id) q.set('patient_id', params.patient_id);
+  if (params.type) q.set('type', params.type);
+  if (params.date_from) q.set('date_from', params.date_from);
+  if (params.date_to) q.set('date_to', params.date_to);
+  return apiRequest<{ data: ApiSale[]; meta?: LaravelPaginationMeta }>(`/sales?${q.toString()}`);
+}
+
+export async function getSale(id: string): Promise<{ data: { data: ApiSale }; status: number }> {
+  return apiRequest<{ data: ApiSale }>(`/sales/${id}`);
+}
+
+export async function createSale(payload: Record<string, unknown>): Promise<{ data: { data: ApiSale }; status: number }> {
+  return apiRequest<{ data: ApiSale }>('/sales', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateSale(id: string, payload: Record<string, unknown>): Promise<{ data: { data: ApiSale }; status: number }> {
+  return apiRequest<{ data: ApiSale }>(`/sales/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function addSalePayment(id: string, payload: Record<string, unknown>): Promise<{ data: { data: ApiPayment }; status: number }> {
+  return apiRequest<{ data: ApiPayment }>(`/sales/${id}/payments`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function scheduleSalePayments(id: string, schedule: Array<Record<string, unknown>>): Promise<{ data: { data: ApiPayment[] }; status: number }> {
+  return apiRequest<{ data: ApiPayment[] }>(`/sales/${id}/schedule-payments`, { method: 'POST', body: JSON.stringify({ schedule }) });
+}
+
+export async function deliverSale(id: string): Promise<{ data: { data: ApiSale }; status: number }> {
+  return apiRequest<{ data: ApiSale }>(`/sales/${id}/deliver`, { method: 'POST' });
+}
+
+export async function cancelSale(id: string): Promise<{ data: { data: ApiSale }; status: number }> {
+  return apiRequest<{ data: ApiSale }>(`/sales/${id}/cancel`, { method: 'POST' });
+}
+
+export async function getSalePaymentSummary(id: string): Promise<{ data: { data: { total_amount: string | number; paid_amount: string | number; remaining_amount: string | number; is_fully_paid: boolean; payments: ApiPayment[] } }; status: number }> {
+  return apiRequest<{ data: { total_amount: string | number; paid_amount: string | number; remaining_amount: string | number; is_fully_paid: boolean; payments: ApiPayment[] } }>(`/sales/${id}/payment-summary`);
+}
+
+export async function getOrders(
+  params: GetOrdersParams = {},
+): Promise<{ data: { data: ApiOrder[]; meta?: LaravelPaginationMeta }; status: number }> {
+  const q = new URLSearchParams({ page: String(params.page ?? 1), per_page: '20' });
+  if (params.status) q.set('status', params.status);
+  if (params.lab_supplier_id) q.set('lab_supplier_id', params.lab_supplier_id);
+  if (params.date_from) q.set('date_from', params.date_from);
+  if (params.date_to) q.set('date_to', params.date_to);
+  return apiRequest<{ data: ApiOrder[]; meta?: LaravelPaginationMeta }>(`/orders?${q.toString()}`);
+}
+
+export async function getOrder(id: string): Promise<{ data: { data: ApiOrder }; status: number }> {
+  return apiRequest<{ data: ApiOrder }>(`/orders/${id}`);
+}
+
+export async function createOrder(payload: Record<string, unknown>): Promise<{ data: { data: ApiOrder }; status: number }> {
+  return apiRequest<{ data: ApiOrder }>('/orders', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateOrderStatus(id: string, status: string): Promise<{ data: { data: ApiOrder }; status: number }> {
+  return apiRequest<{ data: ApiOrder }>(`/orders/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) });
+}
+
+export async function getPendingOrdersDashboard(): Promise<{ data: { data: { sent: number; in_progress: number; ready: number; rows: ApiOrder[] } }; status: number }> {
+  return apiRequest<{ data: { sent: number; in_progress: number; ready: number; rows: ApiOrder[] } }>('/orders/pending');
+}
+
+export async function getAfterSaleEvents(saleId: string): Promise<{ data: { data: ApiAfterSaleEvent[] }; status: number }> {
+  return apiRequest<{ data: ApiAfterSaleEvent[] }>(`/after-sale-events?sale_id=${encodeURIComponent(saleId)}`);
+}
+
+export async function createAfterSaleEvent(payload: Record<string, unknown>): Promise<{ data: { data: ApiAfterSaleEvent }; status: number }> {
+  return apiRequest<{ data: ApiAfterSaleEvent }>('/after-sale-events', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateAfterSaleEventStatus(id: string, payload: Record<string, unknown>): Promise<{ data: { data: ApiAfterSaleEvent }; status: number }> {
+  return apiRequest<{ data: ApiAfterSaleEvent }>(`/after-sale-events/${id}/status`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */
