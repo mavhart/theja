@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-27 (sessione 13)
+> Aggiornato: 2026-03-27 (sessione 14)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -277,4 +277,5 @@ Prossimi task in ordine:
 | Provider SMS (Twilio vs italiano) | Media — serve per Fase 6 | Valutare prezzi e compliance GDPR italiana |
 | Stripe vs alternativa per billing SaaS | ✅ Deciso — Stripe | Implementato con stripe-php v19, webhook, subscriptions/add-ons |
 | Staging AWS: region eu-south-1 vs eu-west-1 | ✅ Deciso — eu-south-1 (Milano) | EC2 + RDS operativi in eu-south-1; ElastiCache rimandato a produzione |
+| FK cross-schema tenant (sales/orders → patients/prescriptions) | ✅ Deciso | Nessuna FK DB verso tabelle cliniche tenant (`patients`, `prescriptions`, `lac_exams`) nelle migration né in `addSalesForeignKeys`/`addOrdersForeignKeys`: colonne UUID indicizzate; integrità applicativa. FK verso `public` (es. `points_of_sale`, `users`) restano. Deploy già migrati: `2026_03_27_131000_drop_cross_clinical_fks_on_sales_orders`. |
 | Coverage minima CI (--min=80) | Bassa — riattivare dalla Fase 1+ | Attualmente disabilitata in api-tests.yml; riabilitare quando ci sono test reali |

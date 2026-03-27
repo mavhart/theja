@@ -991,13 +991,11 @@ class TenantClinicalSchema
 
     protected static function addSalesForeignKeys(string $schema): void
     {
+        // Nessuna FK verso patients/prescriptions: colonne indicizzate a livello schema; le migration tenant
+        // possono girare prima che esistano tabelle cliniche nello stesso ordine di deploy.
         $sql = [
             "ALTER TABLE \"{$schema}\".sales DROP CONSTRAINT IF EXISTS sales_pos_id_foreign",
             "ALTER TABLE \"{$schema}\".sales ADD CONSTRAINT sales_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
-            "ALTER TABLE \"{$schema}\".sales DROP CONSTRAINT IF EXISTS sales_patient_id_foreign",
-            "ALTER TABLE \"{$schema}\".sales ADD CONSTRAINT sales_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE SET NULL",
-            "ALTER TABLE \"{$schema}\".sales DROP CONSTRAINT IF EXISTS sales_prescription_id_foreign",
-            "ALTER TABLE \"{$schema}\".sales ADD CONSTRAINT sales_prescription_id_foreign FOREIGN KEY (prescription_id) REFERENCES \"{$schema}\".prescriptions(id) ON DELETE SET NULL",
             "ALTER TABLE \"{$schema}\".sales DROP CONSTRAINT IF EXISTS sales_user_id_foreign",
             "ALTER TABLE \"{$schema}\".sales ADD CONSTRAINT sales_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE RESTRICT",
         ];
@@ -1027,21 +1025,18 @@ class TenantClinicalSchema
 
     protected static function addOrdersForeignKeys(string $schema): void
     {
+        // Nessuna FK verso patients/prescriptions (stesso motivo di addSalesForeignKeys).
         $sql = [
             "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_pos_id_foreign",
             "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_pos_id_foreign FOREIGN KEY (pos_id) REFERENCES public.points_of_sale(id) ON DELETE RESTRICT",
             "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_sale_id_foreign",
             "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_sale_id_foreign FOREIGN KEY (sale_id) REFERENCES \"{$schema}\".sales(id) ON DELETE SET NULL",
-            "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_patient_id_foreign",
-            "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_patient_id_foreign FOREIGN KEY (patient_id) REFERENCES \"{$schema}\".patients(id) ON DELETE SET NULL",
             "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_lab_supplier_id_foreign",
             "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_lab_supplier_id_foreign FOREIGN KEY (lab_supplier_id) REFERENCES \"{$schema}\".suppliers(id) ON DELETE SET NULL",
             "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_lens_right_product_id_foreign",
             "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_lens_right_product_id_foreign FOREIGN KEY (lens_right_product_id) REFERENCES \"{$schema}\".products(id) ON DELETE SET NULL",
             "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_lens_left_product_id_foreign",
             "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_lens_left_product_id_foreign FOREIGN KEY (lens_left_product_id) REFERENCES \"{$schema}\".products(id) ON DELETE SET NULL",
-            "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_prescription_id_foreign",
-            "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_prescription_id_foreign FOREIGN KEY (prescription_id) REFERENCES \"{$schema}\".prescriptions(id) ON DELETE SET NULL",
             "ALTER TABLE \"{$schema}\".orders DROP CONSTRAINT IF EXISTS orders_user_id_foreign",
             "ALTER TABLE \"{$schema}\".orders ADD CONSTRAINT orders_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE RESTRICT",
         ];

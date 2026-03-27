@@ -186,7 +186,7 @@ export default function PatientAnagraphicForm({
 
   useEffect(() => {
     setF(patientToForm(initial));
-  }, [initial?.id, initial?.updated_at]);
+  }, [initial]);
 
   const set =
     (key: string) =>

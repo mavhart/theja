@@ -108,7 +108,8 @@ export default function PrescriptionForm({
     setRowStrings((prev) => ({ ...prev, [key]: value }));
     setOcrFlags((prev) => {
       if (!prev[key]) return prev;
-      const { [key]: _removed, ...rest } = prev;
+      const rest = { ...prev };
+      delete rest[key];
       return rest;
     });
   };

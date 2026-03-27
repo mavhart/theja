@@ -14,7 +14,6 @@ import {
   STORAGE_USER,
 } from '@/lib/api';
 import SessionInvalidatedModal from '@/components/SessionInvalidatedModal';
-import type { Metadata } from 'next';
 
 // Next.js non può esportare metadata da un Client Component.
 // Per il titolo usiamo il tag direttamente nel return.
