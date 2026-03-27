@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   createProduct,
+  getProductByBarcode,
   getSuppliers,
   type ApiSupplier,
   type ProductCategory,
@@ -27,6 +28,7 @@ export default function NuovoProdottoPage() {
   const [supplierQuery, setSupplierQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const barcodeRef = useRef<HTMLInputElement | null>(null);
 
   const [f, setF] = useState<Record<string, string>>({
     supplier_id: '',
@@ -60,6 +62,10 @@ export default function NuovoProdottoPage() {
       if (status === 200) setSuppliers(data.data ?? []);
     });
   }, [supplierQuery]);
+
+  useEffect(() => {
+    barcodeRef.current?.focus();
+  }, []);
 
   function setField(key: string, value: string) {
     setF((prev) => ({ ...prev, [key]: value }));
@@ -125,6 +131,16 @@ export default function NuovoProdottoPage() {
       setError('Errore di rete.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function lookupBarcodeAndMaybeRedirect() {
+    const code = f.barcode?.trim();
+    if (!code) return;
+    const res = await getProductByBarcode(code);
+    const existingId = res.status === 200 ? res.data.data?.product?.id : null;
+    if (existingId) {
+      router.replace(`/magazzino/${existingId}`);
     }
   }
 
@@ -196,8 +212,15 @@ export default function NuovoProdottoPage() {
             <label key={key} className="flex flex-col gap-1">
               <span className="text-xs capitalize text-muted-foreground">{label}</span>
               <input
+                ref={key === 'barcode' ? barcodeRef : null}
                 value={f[key] ?? ''}
                 onChange={(e) => setField(key, e.target.value)}
+                onKeyDown={(e) => {
+                  if (key === 'barcode' && e.key === 'Enter') {
+                    e.preventDefault();
+                    void lookupBarcodeAndMaybeRedirect();
+                  }
+                }}
                 className="rounded-lg border border-border bg-background px-3 py-2"
               />
             </label>

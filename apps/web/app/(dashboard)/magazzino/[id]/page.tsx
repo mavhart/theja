@@ -7,8 +7,10 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   api,
+  createProduct,
   createStockMovement,
   getInventoryStock,
+  getProductByBarcode,
   getProduct,
   getStockMovements,
   getSuppliers,
@@ -20,13 +22,6 @@ import {
 } from '@/lib/api';
 
 type TabId = 'principale' | 'stock' | 'movimenti' | 'note';
-
-function eur(v: unknown): string {
-  if (v == null || v === '') return '—';
-  const n = Number(v);
-  if (!Number.isFinite(n)) return '—';
-  return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
-}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -451,11 +446,16 @@ function CaricoModal({
   onSaved: () => Promise<void>;
 }) {
   const [supplierId, setSupplierId] = useState(String(product.supplier_id ?? ''));
+  const [barcode, setBarcode] = useState(String(product.barcode ?? ''));
   const [ddtNumber, setDdtNumber] = useState('');
   const [ddtDate, setDdtDate] = useState('');
   const [qty, setQty] = useState('1');
   const [purchasePrice, setPurchasePrice] = useState('');
   const [lot, setLot] = useState('');
+  const [barcodeFound, setBarcodeFound] = useState<ApiProduct | null>(null);
+  const [quickCreate, setQuickCreate] = useState(false);
+  const [quickBrand, setQuickBrand] = useState('');
+  const [quickModel, setQuickModel] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -489,6 +489,43 @@ function CaricoModal({
     }
   }
 
+  async function lookupBarcode() {
+    const code = barcode.trim();
+    if (!code) return;
+    const { status, data } = await getProductByBarcode(code);
+    if (status === 200 && data.data?.product) {
+      const found = data.data.product;
+      setBarcodeFound(found);
+      setQuickCreate(false);
+      if (found.supplier_id) setSupplierId(String(found.supplier_id));
+      if (found.id === product.id) {
+        if (found.barcode) setBarcode(String(found.barcode));
+      }
+      return;
+    }
+    setBarcodeFound(null);
+    setQuickCreate(true);
+  }
+
+  async function createQuickProduct() {
+    const code = barcode.trim();
+    if (!code) return;
+    const { status, data } = await createProduct({
+      category: product.category,
+      supplier_id: supplierId || null,
+      barcode: code,
+      brand: quickBrand || null,
+      model: quickModel || null,
+      sale_price: purchasePrice ? Number(purchasePrice) : null,
+    });
+    if (status !== 200 && status !== 201) {
+      setError('Creazione rapida non riuscita.');
+      return;
+    }
+    setBarcodeFound(data.data);
+    setQuickCreate(false);
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <form onSubmit={submit} className="w-full max-w-lg space-y-4 rounded-xl border border-border bg-background p-6">
@@ -499,6 +536,36 @@ function CaricoModal({
           </Button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 sm:col-span-2">
+            <span className="text-xs text-muted-foreground">Barcode (scanner)</span>
+            <input
+              autoFocus
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void lookupBarcode();
+                }
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-2"
+            />
+          </label>
+          {barcodeFound && (
+            <div className="sm:col-span-2 rounded-md border border-emerald-500/40 bg-emerald-50 p-2 text-xs text-emerald-700">
+              Trovato: {[barcodeFound.brand, barcodeFound.model].filter(Boolean).join(' ') || barcodeFound.id}
+            </div>
+          )}
+          {quickCreate && (
+            <div className="sm:col-span-2 space-y-2 rounded-md border border-amber-500/40 bg-amber-50 p-3">
+              <p className="text-xs text-amber-800">Barcode non trovato. Crea prodotto rapido.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input value={quickBrand} onChange={(e) => setQuickBrand(e.target.value)} placeholder="Marchio" className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
+                <input value={quickModel} onChange={(e) => setQuickModel(e.target.value)} placeholder="Modello" className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => void createQuickProduct()}>Crea prodotto rapido</Button>
+            </div>
+          )}
           <label className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground">Fornitore</span>
             <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2">

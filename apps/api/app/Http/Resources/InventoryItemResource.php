@@ -14,6 +14,8 @@ class InventoryItemResource extends JsonResource
     {
         $data = $this->resource->toArray();
         $data['product'] = $this->whenLoaded('product');
+        $data['point_of_sale'] = $this->whenLoaded('pointOfSale');
+        $data['pos_name'] = $this->whenLoaded('pointOfSale', fn () => $this->pointOfSale?->name);
 
         return $data;
     }

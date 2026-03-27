@@ -445,6 +445,31 @@ export interface ApiLacSchedule {
   [key: string]: unknown;
 }
 
+export interface ApiLabelField {
+  key: 'barcode' | 'barcode_number' | 'brand' | 'model' | 'caliber_bridge' | 'color' | 'sale_price' | 'supplier';
+  label: string;
+  visible: boolean;
+  font_size: number;
+}
+
+export interface ApiLabelTemplate {
+  id: string;
+  pos_id?: string | null;
+  organization_id?: string | null;
+  name: string;
+  paper_format: 'A4' | 'A5';
+  label_width_mm: string | number;
+  label_height_mm: string | number;
+  cols: number;
+  rows: number;
+  margin_top_mm: string | number;
+  margin_left_mm: string | number;
+  spacing_h_mm: string | number;
+  spacing_v_mm: string | number;
+  fields: ApiLabelField[];
+  is_default: boolean;
+}
+
 export interface GetProductsParams {
   q?: string;
   category?: ProductCategory | 'all';
@@ -455,6 +480,13 @@ export interface GetSuppliersParams {
   q?: string;
   category?: string;
   page?: number;
+}
+
+export interface PrintLabelsPayload {
+  product_ids: string[];
+  template_id: string;
+  start_position?: number;
+  copies?: number;
 }
 
 export async function scanPrescriptionOcr(
@@ -503,6 +535,22 @@ export async function getProduct(
   id: string,
 ): Promise<{ data: { data: ApiProduct }; status: number }> {
   return apiRequest<{ data: ApiProduct }>(`/products/${id}`);
+}
+
+export async function getProductByBarcode(
+  barcode: string,
+): Promise<{ data: { data?: { source: string; product: ApiProduct } }; status: number }> {
+  return apiRequest<{ data?: { source: string; product: ApiProduct } }>(`/products/barcode/${encodeURIComponent(barcode)}`);
+}
+
+export async function generateProductBarcode(
+  productId: string,
+): Promise<{ data: { data: ApiProduct }; status: number }> {
+  return apiRequest<{ data: ApiProduct }>(`/products/${productId}/generate-barcode`, { method: 'POST' });
+}
+
+export function getProductBarcodeSvgUrl(productId: string): string {
+  return `${API_URL}/api/products/${productId}/barcode.svg`;
 }
 
 export async function createProduct(
@@ -582,6 +630,40 @@ export async function getLacSchedules(
   const q = new URLSearchParams();
   if (params.expiring_days != null) q.set('expiring_days', String(params.expiring_days));
   return apiRequest<{ data: ApiLacSchedule[] }>(`/lac-schedules${q.toString() ? `?${q.toString()}` : ''}`);
+}
+
+export async function getLabelTemplates(
+  page = 1,
+): Promise<{ data: { data: ApiLabelTemplate[]; meta?: LaravelPaginationMeta }; status: number }> {
+  return apiRequest<{ data: ApiLabelTemplate[]; meta?: LaravelPaginationMeta }>(`/label-templates?page=${page}&per_page=100`);
+}
+
+export async function createLabelTemplate(
+  payload: Partial<ApiLabelTemplate>,
+): Promise<{ data: { data: ApiLabelTemplate }; status: number }> {
+  return apiRequest<{ data: ApiLabelTemplate }>('/label-templates', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateLabelTemplate(
+  id: string,
+  payload: Partial<ApiLabelTemplate>,
+): Promise<{ data: { data: ApiLabelTemplate }; status: number }> {
+  return apiRequest<{ data: ApiLabelTemplate }>(`/label-templates/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function printLabelsPdf(
+  payload: PrintLabelsPayload,
+): Promise<{ data: { pdf_base64: string; filename: string; label_count: number; pages: number | null }; status: number }> {
+  return apiRequest<{ pdf_base64: string; filename: string; label_count: number; pages: number | null }>('/labels/print', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */

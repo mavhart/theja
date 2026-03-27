@@ -15,13 +15,23 @@ class InventoryController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $request->validate([
-            'pos_id' => ['required', 'uuid'],
+            'pos_id'     => ['nullable', 'uuid'],
+            'product_id' => ['nullable', 'uuid'],
         ]);
 
+        if (! $request->filled('pos_id') && ! $request->filled('product_id')) {
+            abort(422, 'Specificare almeno pos_id o product_id.');
+        }
+
         $query = InventoryItem::query()
-            ->with('product')
-            ->where('pos_id', $request->input('pos_id'))
+            ->with(['product', 'pointOfSale'])
             ->orderByDesc('updated_at');
+        if ($request->filled('pos_id')) {
+            $query->where('pos_id', $request->input('pos_id'));
+        }
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->input('product_id'));
+        }
 
         return InventoryItemResource::collection($query->paginate(min((int) $request->input('per_page', 20), 100)));
     }

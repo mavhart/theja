@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
     {
         // Crea prima i ruoli e i permessi di sistema
         $this->call(RolePermissionSeeder::class);
+        $this->call(LabelTemplatePresetSeeder::class);
 
         // ─── Ottica Rossi ─────────────────────────────────────────────────────
         $otticaRossi = Organization::create([

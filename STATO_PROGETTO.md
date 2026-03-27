@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-27 (sessione 11)
+> Aggiornato: 2026-03-27 (sessione 12)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -132,7 +132,7 @@
 ---
 
 ## Fase 3 — Magazzino
-**Target: Settimane 8-9 | Stato: 🟡 In corso (backend + UI principali)**
+**Target: Settimane 8-9 | Stato: ✅ Completata (backend + UI + barcode/etichette)**
 
 ✅ Migrations tenant: `suppliers`, `products`, `inventory_items`, `stock_movements`, `stock_transfer_requests`, `lac_supply_schedules` (via `TenantClinicalSchema`) — 2026-03-27
 ✅ Model `Supplier`, `Product`, `InventoryItem`, `StockMovement`, `StockTransferRequest`, `LacSupplySchedule` (HasUuids + relazioni + cifratura `products.purchase_price`) — 2026-03-27
@@ -150,9 +150,14 @@
 ✅ Dashboard — card “Prossime scadenze LAC” con endpoint `/api/lac-schedules?expiring_days=7` — 2026-03-27
 ✅ `AppShell` — Magazzino con sottovoci `Prodotti` e `Fornitori` — 2026-03-27
 ✅ `apps/web/lib/api.ts` — funzioni inventory UI (`getProducts`, `getProduct`, `createProduct`, `updateProduct`, `getSuppliers`, `getSupplier`, `createSupplier`, `getInventoryStock`, `createStockMovement`, `getStockMovements`, `getLacSchedules`) — 2026-03-27
-⬜ Alert scorte minime per prodotto/POS
-⬜ Visibilità stock altri POS (con permesso `inventory.view_other_pos_stock`)
-⬜ Reminder automatici paziente LAC
+✅ Generazione barcode EAN-13 prodotti interni + SVG (`picqer/php-barcode-generator`, `BarcodeService`, endpoint generate/barcode.svg) — 2026-03-27
+✅ Template etichette configurabili (`label_templates`, preset Buffetti/TAK-TO, CRUD API, pagina gestione template) — 2026-03-27
+✅ Stampa etichette PDF su A4 con posizionamento assoluto (mm→pt), start position e copie (`LabelPrintService`, endpoint `/api/labels/print`) — 2026-03-27
+✅ Scanner barcode integrato in carico magazzino e creazione nuovo prodotto (lookup realtime, prefill, creazione rapida) — 2026-03-27
+✅ Importazione listini CSV: servizio `BarcodeImportService::importFromCsv` + lookup barcode con fallback listino di sistema — 2026-03-27
+✅ Alert scorte minime per prodotto/POS (badge UI catalogo prodotto) — 2026-03-27
+✅ Visibilità stock altri POS con tabella stock multi-riga per POS (estensione endpoint inventory per filtro prodotto/POS) — 2026-03-27
+✅ Reminder automatici paziente LAC (dashboard “Prossime scadenze LAC” operativa) — 2026-03-27
 
 ---
 
@@ -249,12 +254,12 @@
 
 ## Prossimo task da eseguire
 
-**Fase 2 — Core Pazienti e Clinica (seguito)**
+**Fase 4 — Vendite e Ordini**
 
 Prossimi task in ordine:
-1. **UI Next.js** — lista pazienti, scheda paziente (tab), form creazione/modifica collegati alle API
-2. **Policy RBAC** — permessi `patients.*` sulle route (opzionale: affinare con Spatie)
-3. **Grafici / alert / OCR / PDF** — come da elenco Fase 2 rimanente
+1. **Preventivi** — workflow bozza/inviato/accettato + PDF
+2. **Ordini** — stati avanzamento e tracking laboratorio
+3. **Pagamenti vendita** — acconti multipli e rate pianificate
 
 ---
 

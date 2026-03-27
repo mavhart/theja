@@ -4,6 +4,9 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ClinicalPdfController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LacExamController;
+use App\Http\Controllers\LacScheduleController;
+use App\Http\Controllers\LabelPrintController;
+use App\Http\Controllers\LabelTemplateController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionOcrController;
 use App\Http\Controllers\PrescriptionController;
@@ -87,7 +90,13 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
 
     // ─── Magazzino (Fase 3) ────────────────────────────────────────────────
     Route::apiResource('suppliers', SupplierController::class);
+    Route::get('/products/barcode/{barcode}', [ProductController::class, 'lookupByBarcode']);
+    Route::post('/products/{product}/generate-barcode', [ProductController::class, 'generateBarcode']);
+    Route::get('/products/{product}/barcode.svg', [ProductController::class, 'barcodeSvg']);
     Route::apiResource('products', ProductController::class);
+
+    Route::apiResource('label-templates', LabelTemplateController::class);
+    Route::post('/labels/print', [LabelPrintController::class, 'print']);
 
     Route::get('/inventory', [InventoryController::class, 'index']);
     Route::post('/inventory/update-stock', [InventoryController::class, 'updateStock']);
@@ -101,4 +110,6 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::post('/stock-transfers/{transfer}/accept', [StockTransferController::class, 'accept']);
     Route::post('/stock-transfers/{transfer}/reject', [StockTransferController::class, 'reject']);
     Route::post('/stock-transfers/{transfer}/complete', [StockTransferController::class, 'complete']);
+
+    Route::get('/lac-schedules', [LacScheduleController::class, 'index']);
 });

@@ -4,11 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\BarcodeImportService;
+use App\Services\BarcodeService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductController extends Controller
 {
+    public function lookupByBarcode(string $barcode, BarcodeImportService $import): JsonResponse
+    {
+        $result = $import->lookupBarcode($barcode);
+        if (! $result) {
+            return response()->json(['message' => 'Barcode non trovato'], 404);
+        }
+
+        return response()->json(['data' => $result]);
+    }
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $request->validate([
@@ -16,7 +29,9 @@ class ProductController extends Controller
             'category' => ['nullable', 'string'],
         ]);
 
-        $query = Product::query()->with('supplier');
+        $query = Product::query()
+            ->with('supplier')
+            ->withSum('inventoryItems as inventory_total', 'quantity');
 
         if ($request->filled('category')) {
             $query->where('category', $request->input('category'));
@@ -70,6 +85,43 @@ class ProductController extends Controller
         $product->delete();
 
         return response()->json(['message' => 'Prodotto eliminato.']);
+    }
+
+    public function generateBarcode(Product $product, BarcodeService $barcodeService): ProductResource
+    {
+        if (! $product->barcode) {
+            $code = $barcodeService->generateEan13($product->id);
+            $attempt = 0;
+            while (Product::where('barcode', $code)->where('id', '!=', $product->id)->exists() && $attempt < 20) {
+                $code = $barcodeService->generateEan13($product->id.'-'.$attempt);
+                $attempt++;
+            }
+            $product->barcode = $code;
+            $product->save();
+        }
+
+        return new ProductResource($product->fresh()->load('supplier'));
+    }
+
+    public function barcodeSvg(Product $product, BarcodeService $barcodeService): \Illuminate\Http\Response
+    {
+        if (! $product->barcode) {
+            $code = $barcodeService->generateEan13($product->id);
+            $attempt = 0;
+            while (Product::where('barcode', $code)->where('id', '!=', $product->id)->exists() && $attempt < 20) {
+                $code = $barcodeService->generateEan13($product->id.'-'.$attempt);
+                $attempt++;
+            }
+            $product->barcode = $code;
+            $product->save();
+        }
+
+        $code = (string) $product->barcode;
+        $svg = $barcodeService->isValidEan13($code)
+            ? $barcodeService->generate($code, 'EAN13')
+            : $barcodeService->generateCode128($code);
+
+        return response($svg, 200)->header('Content-Type', 'image/svg+xml; charset=UTF-8');
     }
 
     /**

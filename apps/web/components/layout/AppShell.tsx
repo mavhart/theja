@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { api, clearAuthStorage, getStoredToken, STORAGE_SESSION_ID } from '@/lib/api';
+import { api, clearAuthStorage, getStoredToken } from '@/lib/api';
 import { disconnectEcho } from '@/lib/echo';
 
 // ─── Tipi ─────────────────────────────────────────────────────────────────────
@@ -86,6 +86,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { href: '/magazzino', label: 'Prodotti' },
       { href: '/magazzino/fornitori', label: 'Fornitori' },
+      { href: '/magazzino/etichette', label: 'Etichette' },
     ],
   },
   { href: '/vendite',    label: 'Vendite',    icon: icons.sales      },
