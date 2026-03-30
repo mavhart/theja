@@ -135,7 +135,7 @@ export default function LoginPage() {
     if (user) {
       localStorage.setItem(STORAGE_USER, JSON.stringify(user));
     }
-    router.replace('/dashboard');
+    router.replace('/');
   }
 
   return (

@@ -106,7 +106,7 @@ const icons = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard',  label: 'Dashboard',  icon: icons.dashboard  },
+  { href: '/',  label: 'Dashboard',  icon: icons.dashboard  },
   { href: '/pazienti',   label: 'Pazienti',   icon: icons.patients   },
   {
     href: '/magazzino',

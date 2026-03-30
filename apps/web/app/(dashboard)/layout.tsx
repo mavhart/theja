@@ -10,7 +10,7 @@ interface StoredUser { name: string }
 interface StoredPos  { name: string }
 
 /**
- * Layout per tutte le pagine autenticate (route group /dashboard).
+ * Layout per tutte le pagine autenticate (route group (dashboard), URL base /).
  * - Verifica che il token sia presente; se non c'è, rimanda al login.
  * - Usa useSessionGuard per ascoltare gli eventi WebSocket di sessione.
  * - Monta AppShell con i dati utente/POS recuperati dal localStorage.
