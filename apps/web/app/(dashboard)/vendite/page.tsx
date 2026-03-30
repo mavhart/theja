@@ -14,7 +14,13 @@ export default function VenditePage() {
 
   useEffect(() => {
     void (async () => {
-      const { status: http, data } = await getSales({ status: status || undefined, type: type || undefined, date_from: dateFrom || undefined, date_to: dateTo || undefined, patient_id: patientId || undefined });
+      const { status: http, data } = await getSales({
+        status: status || undefined,
+        type: type || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+        patient_id: patientId || undefined,
+      });
       if (http === 200) setRows(data.data ?? []);
     })();
   }, [status, type, dateFrom, dateTo, patientId]);

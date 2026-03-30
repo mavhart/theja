@@ -34,7 +34,7 @@ export default function SaleDetailPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  if (!sale) return <div className="p-6 text-sm text-muted-foreground">Caricamento venditaù</div>;
+  if (!sale) return <div className="p-6 text-sm text-muted-foreground">Caricamento vendita...</div>;
 
   async function savePayment(e: FormEvent) {
     e.preventDefault();
@@ -80,14 +80,14 @@ export default function SaleDetailPage() {
 
       {tab === 'fornitura' && (
         <div className="space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
-          {(sale.items ?? []).map((it) => <div key={it.id} className="flex items-center justify-between border-b border-border/60 py-2"><span>{it.description} ({it.item_type})</span><span>ù {Number(it.total).toFixed(2)}</span></div>)}
+          {(sale.items ?? []).map((it) => <div key={it.id} className="flex items-center justify-between border-b border-border/60 py-2"><span>{it.description} ({it.item_type})</span><span>EUR {Number(it.total).toFixed(2)}</span></div>)}
           {sale.type.includes('occhiale') && <p className="text-muted-foreground">Sezione occhiali/buste con montatura + lente DX/SX e prescrizione collegata.</p>}
         </div>
       )}
 
       {tab === 'pagamenti' && (
         <div className="space-y-4 rounded-xl border border-border bg-card p-4 text-sm">
-          <p>Totale ù {Number(sale.total_amount).toFixed(2)} ù Pagato ù {Number(sale.paid_amount).toFixed(2)} ù Residuo ù {Number(sale.remaining_amount ?? 0).toFixed(2)}</p>
+          <p>Totale EUR {Number(sale.total_amount).toFixed(2)} - Pagato EUR {Number(sale.paid_amount).toFixed(2)} - Residuo EUR {Number(sale.remaining_amount ?? 0).toFixed(2)}</p>
           <div className="h-3 overflow-hidden rounded bg-muted"><div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round((Number(sale.paid_amount) / Math.max(1, Number(sale.total_amount))) * 100))}%` }} /></div>
           <form onSubmit={savePayment} className="grid gap-2 sm:grid-cols-4">
             <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="rounded border border-border px-2 py-1" />
@@ -96,7 +96,7 @@ export default function SaleDetailPage() {
             <Button type="submit">Aggiungi pagamento</Button>
           </form>
           <div className="flex gap-2"><input type="number" min={2} max={12} value={rateCount} onChange={(e) => setRateCount(Number(e.target.value || 3))} className="w-24 rounded border border-border px-2 py-1" /><Button variant="outline" onClick={() => void planRates()}>Pianifica rate</Button></div>
-          {(sale.payments ?? []).map((p) => <div key={p.id} className="flex justify-between border-b border-border/60 py-1"><span>{new Date(p.payment_date).toLocaleDateString('it-IT')} - {p.method} {p.is_scheduled ? '(rata)' : ''}</span><span>ù {Number(p.amount).toFixed(2)}</span></div>)}
+          {(sale.payments ?? []).map((p) => <div key={p.id} className="flex justify-between border-b border-border/60 py-1"><span>{new Date(p.payment_date).toLocaleDateString('it-IT')} - {p.method} {p.is_scheduled ? '(rata)' : ''}</span><span>EUR {Number(p.amount).toFixed(2)}</span></div>)}
         </div>
       )}
 
@@ -104,7 +104,7 @@ export default function SaleDetailPage() {
         <div className="space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
           {!order ? <Button onClick={() => void createLabOrder()}>Crea ordine lab</Button> : (
             <>
-              <p>Codice busta: <strong>{order.job_code ?? 'ù'}</strong></p>
+              <p>Codice busta: <strong>{order.job_code ?? '-'}</strong></p>
               <p>Stato: <strong>{order.status}</strong></p>
               <div className="flex flex-wrap gap-2">{(['draft','sent','in_progress','ready','delivered','cancelled'] as const).map((s) => <Button key={s} size="sm" variant={order.status === s ? 'default' : 'outline'} onClick={() => void updateOrderStatus(order.id, s).then((r) => { if (r.status === 200) setOrder(r.data.data); })}>{s}</Button>)}</div>
             </>
@@ -119,7 +119,7 @@ export default function SaleDetailPage() {
             <input required value={evtDesc} onChange={(e) => setEvtDesc(e.target.value)} className="rounded border border-border px-2 py-1" placeholder="Descrizione evento" />
             <Button type="submit">Nuovo evento</Button>
           </form>
-          {events.length === 0 ? <p className="text-muted-foreground">Nessun evento post-vendita</p> : events.map((e) => <div key={e.id} className="flex justify-between border-b border-border/60 py-1"><span>{e.type} ù {e.description}</span><span>{e.status}</span></div>)}
+          {events.length === 0 ? <p className="text-muted-foreground">Nessun evento post-vendita</p> : events.map((e) => <div key={e.id} className="flex justify-between border-b border-border/60 py-1"><span>{e.type} - {e.description}</span><span>{e.status}</span></div>)}
         </div>
       )}
     </div>

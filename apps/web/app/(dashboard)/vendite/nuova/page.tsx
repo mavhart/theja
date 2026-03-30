@@ -220,7 +220,7 @@ export default function NuovaVenditaPage() {
           <p>Totale: <strong>€ {total.toFixed(2)}</strong></p>
           <p>Residuo: <strong>€ {total.toFixed(2)}</strong></p>
         </div>
-        <Button onClick={() => void create()} disabled={busy || rows.length === 0}>{busy ? 'Creazione…' : 'Salva vendita'}</Button>
+        <Button onClick={() => void create()} disabled={busy || rows.length === 0}>{busy ? 'Creazione...' : 'Salva vendita'}</Button>
         <div className="grid gap-2">
           {PAYMENT_ACTIONS.map((action) => (
             <Button key={action} variant="outline" onClick={() => {
