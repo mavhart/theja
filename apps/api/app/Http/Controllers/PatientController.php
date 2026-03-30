@@ -18,6 +18,9 @@ class PatientController extends Controller
             'birthday_today' => ['nullable', 'boolean'],
         ]);
 
+        // In liste/ricerche mascheriamo il CF per minimizzare esposizione dati.
+        $request->attributes->set('mask_fiscal_code', true);
+
         $query = Patient::query()->where('is_active', true);
 
         if ($request->filled('q')) {

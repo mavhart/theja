@@ -172,14 +172,19 @@ class AuthController extends Controller
 
         $activePosData  = null;
         $permissions    = [];
+        $aiAnalysisEnabled = false;
 
         if ($session) {
             $activePosData = $session->pointOfSale;
             $permissions   = PermissionHelper::permissionsForPos($user, $session->pos_id);
+            $aiAnalysisEnabled = (bool) ($activePosData?->ai_analysis_enabled ?? false);
         }
 
+        $userPayload = $this->formatUser($user);
+        $userPayload['ai_analysis_enabled'] = $aiAnalysisEnabled;
+
         return response()->json([
-            'user'        => $this->formatUser($user),
+            'user'        => $userPayload,
             'active_pos'  => $activePosData,
             'permissions' => $permissions,
             'session_id'  => $session?->id,

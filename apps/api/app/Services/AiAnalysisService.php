@@ -176,6 +176,7 @@ class AiAnalysisService
         if (is_array($parsed) && isset($parsed['narrative'])) {
             // Ripulizia minima per evitare tipi inattesi.
             if (! isset($parsed['chart_data'])) $parsed['chart_data'] = [];
+            $parsed['chart_data'] = $this->normalizeChartData($parsed['chart_data']);
             if (! isset($parsed['data'])) $parsed['data'] = [];
             return $parsed;
         }
@@ -185,6 +186,74 @@ class AiAnalysisService
             'data' => $promptData,
             'chart_data' => [],
         ];
+    }
+
+    /**
+     * Normalizza chart_data in forma: [{label: string, value: number}, ...]
+     *
+     * Claude può rispondere con shape diversi (es. {labels, values}, [{name, y}], ecc.).
+     *
+     * @param mixed $chartDataRaw
+     * @return array<int, array{label: string, value: float}>
+     */
+    private function normalizeChartData(mixed $chartDataRaw): array
+    {
+        if (! is_array($chartDataRaw)) {
+            return [];
+        }
+
+        // Caso: {labels:[], values:[]} o simili
+        if (isset($chartDataRaw['labels']) && isset($chartDataRaw['values'])
+            && is_array($chartDataRaw['labels']) && is_array($chartDataRaw['values'])) {
+            $out = [];
+            $labels = array_values($chartDataRaw['labels']);
+            $values = array_values($chartDataRaw['values']);
+            $count = min(count($labels), count($values));
+            for ($i = 0; $i < $count; $i++) {
+                $out[] = [
+                    'label' => (string) $labels[$i],
+                    'value' => (float) $values[$i],
+                ];
+            }
+            return $out;
+        }
+
+        $out = [];
+
+        foreach ($chartDataRaw as $k => $item) {
+            // Caso array associativo { "label": value }
+            if (! is_array($item) && is_numeric($item)) {
+                $out[] = ['label' => (string) $k, 'value' => (float) $item];
+                continue;
+            }
+
+            if (! is_array($item)) {
+                continue;
+            }
+
+            // Caso [{label, value}]
+            $label = $item['label'] ?? null;
+            $value = $item['value'] ?? null;
+            if ($label !== null && $value !== null && is_numeric($value)) {
+                $out[] = ['label' => (string) $label, 'value' => (float) $value];
+                continue;
+            }
+
+            // Caso [{name, y}] oppure [{x,y}]
+            $label = $item['name'] ?? $item['x'] ?? null;
+            $value = $item['y'] ?? $item['value'] ?? null;
+            if ($label !== null && $value !== null && is_numeric($value)) {
+                $out[] = ['label' => (string) $label, 'value' => (float) $value];
+                continue;
+            }
+
+            // Caso array tuple [label, value]
+            if (array_is_list($item) && count($item) >= 2 && is_numeric($item[1])) {
+                $out[] = ['label' => (string) $item[0], 'value' => (float) $item[1]];
+            }
+        }
+
+        return $out;
     }
 
     /**

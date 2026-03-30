@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\SaleResource;
 use App\Models\Sale;
 use App\Services\SaleService;
@@ -59,6 +60,11 @@ class SaleController extends Controller
             'items.*.notes' => ['nullable', 'string'],
         ]);
 
+        if ($request->has('discount_amount') && array_key_exists('discount_amount', $data) && (float) ($data['discount_amount'] ?? 0) !== 0.0) {
+            $allowed = PermissionHelper::userCan($request->user(), 'sales.apply_discount', (string) $data['pos_id']);
+            abort_unless($allowed, 403, 'Non autorizzato.');
+        }
+
         $sale = $service->createSale([
             'pos_id' => $data['pos_id'],
             'patient_id' => $data['patient_id'] ?? null,
@@ -93,6 +99,11 @@ class SaleController extends Controller
             'paid_amount' => ['nullable', 'numeric'],
             'prescription_id' => ['nullable', 'uuid', 'exists:prescriptions,id'],
         ]);
+
+        if (array_key_exists('discount_amount', $data) && (float) ($data['discount_amount'] ?? 0) !== 0.0) {
+            $allowed = PermissionHelper::userCan($request->user(), 'sales.apply_discount', (string) $sale->pos_id);
+            abort_unless($allowed, 403, 'Non autorizzato.');
+        }
 
         $sale->update($data);
 

@@ -33,7 +33,7 @@ class PatientResource extends JsonResource
             'country'                    => $this->country,
             'date_of_birth'              => $this->date_of_birth?->format('Y-m-d'),
             'place_of_birth'             => $this->place_of_birth,
-            'fiscal_code'                => $this->fiscal_code,
+            'fiscal_code'                => $this->resolveFiscalCode($request),
             'vat_number'                 => $this->vat_number,
             'phone'                      => $this->phone,
             'phone2'                     => $this->phone2,
@@ -74,5 +74,24 @@ class PatientResource extends JsonResource
             'prescription_alert'         => PrescriptionAlertService::resolve($latest),
             'last_prescription_visit_date' => $latest?->visit_date?->format('Y-m-d'),
         ];
+    }
+
+    private function resolveFiscalCode(Request $request): ?string
+    {
+        $fc = $this->fiscal_code;
+        if ($fc === null) return null;
+
+        $mask = (bool) $request->attributes->get('mask_fiscal_code', false);
+        if (! $mask) {
+            return (string) $fc;
+        }
+
+        $s = (string) $fc;
+        if (strlen($s) < 8) {
+            return str_repeat('*', strlen($s));
+        }
+
+        // Mostra solo prefisso e suffisso (non l'intero codice fiscale).
+        return substr($s, 0, 4).str_repeat('*', 8).substr($s, -4);
     }
 }

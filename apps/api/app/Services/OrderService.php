@@ -4,9 +4,14 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\PointOfSale;
+use App\Services\CommunicationService;
 
 class OrderService
 {
+    public function __construct(private readonly CommunicationService $communicationService)
+    {
+    }
+
     public function createOrder(array $data): Order
     {
         if (empty($data['job_code']) && ! empty($data['pos_id'])) {
@@ -22,7 +27,15 @@ class OrderService
         $order->status = $status;
         if ($status === 'ready') {
             $order->actual_delivery_date = null;
-            // Placeholder notifica paziente (Fase 6 comunicazioni automatiche)
+            $order->loadMissing('patient');
+            if ($order->patient) {
+                // Notifica opzionale via modulo comunicazioni (trigger: order_ready)
+                // Tipo sms/email deriva dai template disponibili.
+                $this->communicationService->send('sms', $order->patient, 'order_ready', [
+                    'paziente_nome' => trim(($order->patient->first_name ?? '').' '.($order->patient->last_name ?? '')),
+                    'data' => now()->format('d/m/Y'),
+                ]);
+            }
         }
         if ($status === 'delivered') {
             $order->actual_delivery_date = now()->format('Y-m-d');

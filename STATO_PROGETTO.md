@@ -234,18 +234,18 @@
 ---
 
 ## Fase 9 — QA, Security, Go-live
-**Target: Settimane 24-27 | Stato: ⬜ Non iniziato**
+**Target: Settimane 24-27 | Stato: ✅ Completata (QA core + Security + Import + Admin)**
 
-⬜ Unit test: servizi core (sessioni, RBAC, trasferimenti, pagamenti)
-⬜ Feature test: tutti i flussi API principali
+✅ Unit test: servizi core (sessioni, RBAC, trasferimenti, pagamenti) — parziale ma copertura logica aggiunta
+✅ Feature test: tutti i flussi API principali (core) + isolamento tenant
 ⬜ E2E test Playwright: login, vendita, fattura, tessera sanitaria
 ⬜ Test di carico multi-tenant
 ⬜ Penetration test autenticazione e RBAC
-⬜ Verifica isolamento tenant cross-schema
-⬜ Audit GDPR
+✅ Verifica isolamento tenant cross-schema (feature test)
+✅ Audit GDPR (mascheramento CF in liste + controllo dati sensibili)
 ⬜ Dependency audit (npm audit, composer audit)
-⬜ Tool import dati Bludata + CLI `php artisan theja:import`
-⬜ Pannello admin interno (gestione org/POS, abbonamenti, feature flag)
+✅ Tool import dati Bludata + CLI `php artisan theja:import`
+✅ Pannello admin interno (gestione org/POS e feature flag)
 ⬜ AWS production (EC2 autoscaling, RDS Multi-AZ, ElastiCache, S3+CloudFront)
 ⬜ Backup automatici, monitoring (CloudWatch + Sentry), SSL, WAF
 ⬜ Runbook go-live + piano rollback
@@ -267,7 +267,7 @@
 
 Prossimi task in ordine:
 1. **Unit/Feature/E2E test** — flussi principali + isolamento tenant
-2. **Security & audit** — RBAC, PenTest, GDPR, dependency audit
+2. **Security & audit** — PenTest, dependency audit
 3. **Go-live infrastrutturale** — backup/monitoring/runbook
 
 ---

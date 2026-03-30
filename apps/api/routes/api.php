@@ -28,6 +28,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AiAnalysisController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Middleware\CheckFeatureActive;
 use App\Http\Middleware\EnforceSessionLimit;
 use App\Http\Middleware\ResolveTenant;
@@ -53,7 +54,7 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 // ─── Autenticazione ───────────────────────────────────────────────────────────
 
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/auth/select-pos', [AuthController::class, 'selectPos']);
@@ -107,7 +108,7 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::apiResource('products', ProductController::class);
 
     Route::apiResource('label-templates', LabelTemplateController::class);
-    Route::post('/labels/print', [LabelPrintController::class, 'print']);
+    Route::post('/labels/print', [LabelPrintController::class, 'print'])->middleware('throttle:20,1');
 
     Route::get('/inventory', [InventoryController::class, 'index']);
     Route::post('/inventory/update-stock', [InventoryController::class, 'updateStock']);
@@ -184,8 +185,20 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
 
     Route::post('/reports/query-builder', [ReportController::class, 'queryBuilder']);
 
-    Route::get('/ai/trends', [AiAnalysisController::class, 'trends']);
-    Route::get('/ai/forecast-reorders', [AiAnalysisController::class, 'forecastReorders']);
-    Route::get('/ai/revenue-analysis', [AiAnalysisController::class, 'revenueAnalysis']);
-    Route::get('/ai/opportunities', [AiAnalysisController::class, 'opportunities']);
+    Route::middleware('ai.tenant.throttle')->group(function () {
+        Route::get('/ai/trends', [AiAnalysisController::class, 'trends']);
+        Route::get('/ai/forecast-reorders', [AiAnalysisController::class, 'forecastReorders']);
+        Route::get('/ai/revenue-analysis', [AiAnalysisController::class, 'revenueAnalysis']);
+        Route::get('/ai/opportunities', [AiAnalysisController::class, 'opportunities']);
+    });
+
+// ─── Admin globale (super_admin) ─────────────────────────────────────────────
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::middleware(['role:super_admin'])->group(function () {
+        Route::get('/admin/organizations', [AdminController::class, 'organizations']);
+        Route::post('/admin/organizations', [AdminController::class, 'storeOrganization']);
+        Route::put('/admin/organizations/{org}/features', [AdminController::class, 'updateFeatures']);
+        Route::get('/admin/stats', [AdminController::class, 'stats']);
+    });
+});
 });

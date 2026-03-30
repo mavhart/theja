@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CashRegisterSession;
 use App\Models\PointOfSale;
 use App\Models\Sale;
+use App\Helpers\PermissionHelper;
 use App\Services\VirtualCashRegisterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -85,7 +86,11 @@ class CashRegisterController extends Controller
         $id = $posId ?: (string) ($request->query('pos_id') ?: $request->user()?->current_pos_id);
         abort_if(empty($id), 422, 'pos_id mancante.');
 
-        return PointOfSale::query()->findOrFail($id);
+        $pos = PointOfSale::query()->findOrFail($id);
+        $user = $request->user();
+        abort_unless($user && PermissionHelper::userCan($user, 'cash_register.access', $pos->id), 403, 'Non autorizzato.');
+
+        return $pos;
     }
 }
 

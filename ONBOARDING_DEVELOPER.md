@@ -183,6 +183,47 @@ Moduli: `auth`, `tenant`, `patients`, `inventory`, `sales`, `billing`, `agenda`,
 
 ---
 
+## Import dati e integrazioni
+
+### Import Bludata / CSV Theja
+
+Esegui un import in modalità `dry-run`:
+
+```bash
+php artisan theja:import --source=bludata --file=export.csv --dry-run
+```
+
+Opzioni supportate:
+- `--source=bludata|csv`
+- `--file=...` (file CSV oppure cartella export)
+- `--dry-run` (non scrive su DB, stampa report)
+
+### Come aggiungere un provider RT
+
+I provider RT sono integrati via pattern “provider factory”:
+- interfaccia/contratto provider: `RtProviderInterface`
+- implementazione provider: classe concreta in `app/Services/CashRegister/Providers/*`
+- factory che seleziona il provider: `RtProviderFactory::make(PointOfSale $pos)`
+
+Per aggiungere un nuovo provider:
+1. Crea una classe che implementa `RtProviderInterface`
+2. Estendi `RtProviderFactory` per istanziare la classe in base a `pos.rt_provider`
+3. Usa credenziali cifrate su `points_of_sale.rt_credentials`
+
+### Come aggiungere un trigger comunicazioni
+
+Le comunicazioni automatiche usano:
+- `CommunicationService` (render template e dispatch)
+- `CommunicationTemplate` (template per `type` + `trigger`)
+- scheduler in `routes/console.php` che chiama metodi di `CommunicationService`
+
+Per aggiungere un nuovo trigger:
+1. Inserisci/aggiorna un template con `trigger=<nuovo_trigger>` in `communication_templates`
+2. Aggiungi la logica di scheduling/invio nel `CommunicationService` (metodo scheduleX)
+3. Registra il job in `apps/api/routes/console.php`
+
+---
+
 ## Testing
 
 ```bash

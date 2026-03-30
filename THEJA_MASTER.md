@@ -277,18 +277,18 @@ I negozi del product owner sono il primo cliente staging.
 
 ## 13. Piano di sviluppo — fasi
 
-| Fase | Contenuto | Settimane |
-|---|---|---|
-| 0 | Infrastruttura, Docker, CI/CD | 1-2 |
-| 1 | Auth, RBAC, org/POS, device sessions, PWA base | 3-4 |
-| 2 | Pazienti, prescrizioni, clinica, OCR | 5-7 |
-| 3 | Magazzino, trasferimenti inter-POS, LAC | 8-9 |
-| 4 | Vendite, preventivi, pagamenti multi-acconto, assistenza | 10-12 |
-| 5 | Fatturazione, SDI, tessera sanitaria, RT fisico | 13-15 |
-| 6 | Agenda, comunicazioni automatiche | 16-17 |
-| 7 | Cassa virtuale, SumUp | 18-21 |
-| 8 | Reportistica, query builder, AI Analysis | 22-23 |
-| 9 | QA, security, import dati, go-live | 24-27 |
+| Fase | Contenuto | Settimane | Stato |
+|---|---|---|---|
+| 0 | Infrastruttura, Docker, CI/CD | 1-2 | ✅ Completata |
+| 1 | Auth, RBAC, org/POS, device sessions, PWA base | 3-4 | ✅ Completata |
+| 2 | Pazienti, prescrizioni, clinica, OCR | 5-7 | ✅ Completata |
+| 3 | Magazzino, trasferimenti inter-POS, LAC | 8-9 | ✅ Completata |
+| 4 | Vendite, preventivi, pagamenti multi-acconto, assistenza | 10-12 | ✅ Completata |
+| 5 | Fatturazione, SDI, tessera sanitaria, RT fisico | 13-15 | ✅ Completata |
+| 6 | Agenda, comunicazioni automatiche | 16-17 | ✅ Completata |
+| 7 | Cassa virtuale, SumUp | 18-21 | ✅ Completata |
+| 8 | Reportistica, query builder, AI Analysis | 22-23 | ✅ Completata |
+| 9 | QA, security, import dati, go-live | 24-27 | ✅ Completata |
 
 ---
 

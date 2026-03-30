@@ -33,6 +33,7 @@ class RolePermissionSeeder extends Seeder
 
     /** Permessi per ruolo. */
     private const ROLE_PERMISSIONS = [
+        'super_admin' => self::PERMISSIONS,
         'org_owner' => [
             'inventory.view_purchase_price',
             'inventory.view_other_pos_stock',

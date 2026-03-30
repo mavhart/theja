@@ -76,6 +76,10 @@ class QueryBuilderService
             $operatorId = isset($filters['operator']) ? (string) $filters['operator'] : null;
             $status = isset($filters['status']) ? (string) $filters['status'] : null;
             $supplyType = isset($filters['supply_type']) ? (string) $filters['supply_type'] : null;
+            $supplierId = isset($filters['supplier']) ? (string) $filters['supplier'] : null;
+            $priceRangeRaw = $filters['price_range'] ?? null;
+
+            [$priceMin, $priceMax] = $this->parsePriceRange($priceRangeRaw);
 
             $salesQ = Sale::query()
                 ->where('pos_id', $posId)
@@ -83,7 +87,29 @@ class QueryBuilderService
                 ->when($dateTo, fn ($q) => $q->where('sale_date', '<=', $dateTo))
                 ->when($operatorId, fn ($q) => $q->where('user_id', $operatorId))
                 ->when($status, fn ($q) => $q->where('status', $status))
-                ->when($supplyType, fn ($q) => $q->where('type', $supplyType));
+                ->when($supplyType, fn ($q) => $q->where('type', $supplyType))
+                ->when($supplierId, function ($q) use ($supplierId) {
+                    $q->whereExists(function ($sub) use ($supplierId) {
+                        $sub->select(DB::raw('1'))
+                            ->from('sale_items')
+                            ->join('products', 'products.id', '=', 'sale_items.product_id')
+                            ->whereColumn('sale_items.sale_id', 'sales.id')
+                            ->where('products.supplier_id', $supplierId);
+                    });
+                })
+                ->when($priceMin !== null || $priceMax !== null, function ($q) use ($priceMin, $priceMax) {
+                    if ($priceMin !== null && $priceMax !== null) {
+                        $q->whereBetween('total_amount', [$priceMin, $priceMax]);
+                        return;
+                    }
+                    if ($priceMin !== null) {
+                        $q->where('total_amount', '>=', $priceMin);
+                        return;
+                    }
+                    if ($priceMax !== null) {
+                        $q->where('total_amount', '<=', $priceMax);
+                    }
+                });
 
             if ($group === 'month' || $group === 'day' || $group === 'week' || $group === 'year') {
                 $periodExpr = match ($group) {
@@ -213,6 +239,42 @@ class QueryBuilderService
                 'chart_type' => $chartType,
             ],
         ];
+    }
+
+    /**
+     * @param mixed $raw
+     * @return array{0: float|null, 1: float|null}
+     */
+    private function parsePriceRange(mixed $raw): array
+    {
+        if ($raw === null) return [null, null];
+        if (is_array($raw) && count($raw) >= 2) {
+            $min = is_numeric($raw[0] ?? null) ? (float) $raw[0] : null;
+            $max = is_numeric($raw[1] ?? null) ? (float) $raw[1] : null;
+            return [$min, $max];
+        }
+
+        if (! is_string($raw)) {
+            return [null, null];
+        }
+
+        $s = trim($raw);
+        if ($s === '') return [null, null];
+
+        // Supporta: "10,50" oppure "10-50"
+        if (str_contains($s, ',')) {
+            $parts = array_map('trim', explode(',', $s, 2));
+        } elseif (str_contains($s, '-')) {
+            $parts = array_map('trim', explode('-', $s, 2));
+        } else {
+            // Se è un numero singolo consideriamo minimo.
+            if (is_numeric($s)) return [(float) $s, null];
+            return [null, null];
+        }
+
+        $min = is_numeric($parts[0] ?? null) ? (float) $parts[0] : null;
+        $max = is_numeric($parts[1] ?? null) ? (float) $parts[1] : null;
+        return [$min, $max];
     }
 }
 

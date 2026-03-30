@@ -3,6 +3,7 @@
 use App\Console\Commands\CleanupInactiveSessions;
 use App\Http\Middleware\CheckFeatureActive;
 use App\Http\Middleware\EnforceSessionLimit;
+use App\Http\Middleware\AiTenantThrottle;
 use App\Http\Middleware\ResolveTenant;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant'        => ResolveTenant::class,
             'enforce.session' => EnforceSessionLimit::class,
             'check.feature' => CheckFeatureActive::class,
+            'ai.tenant.throttle' => AiTenantThrottle::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {
