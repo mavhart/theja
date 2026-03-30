@@ -14,9 +14,10 @@ export const STORAGE_USER       = 'theja_user';
 // ─── Tipi risposta API ────────────────────────────────────────────────────────
 
 export interface ApiPointOfSale {
-  id:   string;
+  id: string;
   name: string;
-  city: string;
+  city?: string;
+  ai_analysis_enabled?: boolean;
 }
 
 export interface ApiUser {
@@ -1251,6 +1252,130 @@ export async function refundSumupPayment(id: string, payload: { pos_id?: string;
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+// ─── Reports (Fase 8) ─────────────────────────────────────────────────────────
+
+export interface ApiChartPoint {
+  label: string;
+  value: number;
+}
+
+export interface ApiSalesSummary {
+  total_amount: number;
+  by_type: { type: string; total: number }[];
+  by_operator: { user_id: string; user_name?: string | null; total: number }[];
+  by_payment_method: { method: string; total: number }[];
+}
+
+export interface ApiRevenueByPeriod {
+  group_by: string;
+  chart_data: ApiChartPoint[];
+}
+
+export interface ApiInventoryReport {
+  below_stock: Array<{
+    product_id: string;
+    product_category?: string | null;
+    product_brand?: string | null;
+    product_model?: string | null;
+    quantity: number;
+    min_stock: number;
+    max_stock: number;
+  }>;
+  rotation_by_category: Array<{ category: string; sold_qty: number }>;
+  inventory_value_total: number;
+}
+
+export interface ApiPatientReport {
+  new_patients_by_month: Array<{ period: string; value: number }>;
+  prescriptions_expired_count: number;
+  lac_active_count: number;
+}
+
+export interface ApiTopProductsResponse {
+  items: Array<{ product_id: string; category?: string | null; label: string; qty: number; revenue: number }>;
+}
+
+export type ReportEntity = 'sales' | 'products' | 'patients';
+
+export interface ApiQueryBuilderResult {
+  chart_data: ApiChartPoint[];
+  table_data: Array<ApiChartPoint>;
+  meta: { entity: ReportEntity; group_by: string; chart_type?: string };
+}
+
+export async function getSalesReport(params: { from: string; to: string; group_by?: string }): Promise<{ data: { sales_summary: ApiSalesSummary; revenue_by_period: ApiRevenueByPeriod }; status: number }> {
+  const q = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    ...(params.group_by ? { group_by: params.group_by } : {}),
+  });
+  return apiRequest<{ sales_summary: ApiSalesSummary; revenue_by_period: ApiRevenueByPeriod }>(`/reports/sales?${q.toString()}`);
+}
+
+export async function getInventoryReport(): Promise<{ data: ApiInventoryReport; status: number }> {
+  return apiRequest<ApiInventoryReport>('/reports/inventory');
+}
+
+export async function getPatientsReport(): Promise<{ data: ApiPatientReport; status: number }> {
+  return apiRequest<ApiPatientReport>('/reports/patients');
+}
+
+export async function getRevenueReport(params: { from: string; to: string; group_by: string }): Promise<{ data: ApiRevenueByPeriod; status: number }> {
+  const q = new URLSearchParams({ from: params.from, to: params.to, group_by: params.group_by });
+  return apiRequest<ApiRevenueByPeriod>(`/reports/revenue?${q.toString()}`);
+}
+
+export async function getTopProductsReport(params: { from: string; to: string; limit?: number }): Promise<{ data: ApiTopProductsResponse; status: number }> {
+  const q = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    ...(params.limit ? { limit: String(params.limit) } : {}),
+  });
+  return apiRequest<ApiTopProductsResponse>(`/reports/top-products?${q.toString()}`);
+}
+
+export async function queryBuilderReport(params: {
+  entity: ReportEntity;
+  filters: Record<string, unknown>;
+  group_by?: string;
+  chart_type?: 'pie' | 'bar' | 'line' | 'table';
+}): Promise<{ data: { available_filters: unknown; result: ApiQueryBuilderResult }; status: number }> {
+  const payload = {
+    entity: params.entity,
+    filters: params.filters,
+    group_by: params.group_by ?? 'none',
+    chart_type: params.chart_type ?? 'table',
+  };
+  return apiRequest<{ available_filters: unknown; result: ApiQueryBuilderResult }>('/reports/query-builder', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── AI Analysis (Fase 8) ───────────────────────────────────────────────────────
+
+export interface ApiAiAnalysisResult {
+  narrative: string;
+  data: unknown;
+  chart_data: ApiChartPoint[];
+}
+
+export async function getAiTrends(): Promise<{ data: ApiAiAnalysisResult; status: number }> {
+  return apiRequest<ApiAiAnalysisResult>('/ai/trends');
+}
+
+export async function getAiForecastReorders(): Promise<{ data: ApiAiAnalysisResult; status: number }> {
+  return apiRequest<ApiAiAnalysisResult>('/ai/forecast-reorders');
+}
+
+export async function getAiRevenueAnalysis(): Promise<{ data: ApiAiAnalysisResult; status: number }> {
+  return apiRequest<ApiAiAnalysisResult>('/ai/revenue-analysis');
+}
+
+export async function getAiOpportunities(): Promise<{ data: ApiAiAnalysisResult; status: number }> {
+  return apiRequest<ApiAiAnalysisResult>('/ai/opportunities');
 }
 
 /** Scarica un PDF restituito dall&apos;API (campo pdf_base64). */

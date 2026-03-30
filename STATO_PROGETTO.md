@@ -1,5 +1,5 @@
 # STATO_PROGETTO.md — Theja
-> Aggiornato: 2026-03-27 (sessione 16)
+> Aggiornato: 2026-03-27 (sessione 17)
 > **Regola:** aggiornare questo file ad ogni sessione di lavoro, ogni volta che un task viene completato e ogni volta che si inizia qualcosa di nuovo.
 
 ---
@@ -223,13 +223,13 @@
 ---
 
 ## Fase 8 — Reportistica e AI
-**Target: Settimane 22-23 | Stato: ⬜ Non iniziato**
+**Target: Settimane 22-23 | Stato: ✅ Completata (report + query builder + AI add-on)**
 
-⬜ Query builder visuale (filtri, tabella, export Excel/PDF, grafici)
-⬜ Dashboard principale POS (vendite giornaliere/mensili, alert, appuntamenti)
-⬜ Report fatturato, magazzino, pazienti
-⬜ Reportistica aggregata org (tutti i POS)
-⬜ AI Analysis add-on (Claude API con function calling su query read-only tenant)
+✅ Backend: `ReportService` con riepiloghi vendite/magazzino/pazienti, `QueryBuilderService` e endpoint `/api/reports/*` — 2026-03-27
+✅ Backend: AI Analysis `AiAnalysisService` (Claude JSON) + `AiAnalysisController` con feature flag `ai_analysis_enabled` — 2026-03-27
+✅ Backend: endpoint `POST /api/reports/query-builder` — 2026-03-27
+✅ Frontend: pagina `/report` con tab Vendite/Magazzino/Pazienti/Query Builder/AI Analysis (Recharts) — 2026-03-27
+✅ Frontend: dashboard home cards aggiornate con vendite di oggi e metriche coerenti — 2026-03-27
 
 ---
 
@@ -263,13 +263,12 @@
 ---
 
 ## Prossimo task da eseguire
-
-**Fase 8 — Reportistica e AI**
+**Fase 9 — QA, Security, Go-live**
 
 Prossimi task in ordine:
-1. **Query builder visuale** — filtri, tabella, export Excel/PDF, grafici
-2. **Dashboard POS avanzata** — vendite giornaliere/mensili, alert, appuntamenti
-3. **Reportistica aggregata org + AI analysis** — reporting multi-POS e query assistite
+1. **Unit/Feature/E2E test** — flussi principali + isolamento tenant
+2. **Security & audit** — RBAC, PenTest, GDPR, dependency audit
+3. **Go-live infrastrutturale** — backup/monitoring/runbook
 
 ---
 

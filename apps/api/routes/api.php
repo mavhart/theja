@@ -24,6 +24,8 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SumUpController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\AiAnalysisController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\CheckFeatureActive;
@@ -171,4 +173,19 @@ Route::middleware(['auth:sanctum', ResolveTenant::class, EnforceSessionLimit::cl
     Route::post('/payments/sumup/create', [SumUpController::class, 'create']);
     Route::get('/payments/sumup/{id}/status', [SumUpController::class, 'status']);
     Route::post('/payments/sumup/{id}/refund', [SumUpController::class, 'refund']);
+
+    // ─── Reportistica + AI Analysis (Fase 8) ────────────────────────────────────
+    Route::get('/reports/sales', [ReportController::class, 'sales']);
+    Route::get('/reports/inventory', [ReportController::class, 'inventory']);
+    Route::get('/reports/patients', [ReportController::class, 'patients']);
+    Route::get('/reports/revenue', [ReportController::class, 'revenue']);
+    Route::get('/reports/top-products', [ReportController::class, 'topProducts']);
+    Route::get('/reports/org-aggregate', [ReportController::class, 'orgAggregate']);
+
+    Route::post('/reports/query-builder', [ReportController::class, 'queryBuilder']);
+
+    Route::get('/ai/trends', [AiAnalysisController::class, 'trends']);
+    Route::get('/ai/forecast-reorders', [AiAnalysisController::class, 'forecastReorders']);
+    Route::get('/ai/revenue-analysis', [AiAnalysisController::class, 'revenueAnalysis']);
+    Route::get('/ai/opportunities', [AiAnalysisController::class, 'opportunities']);
 });

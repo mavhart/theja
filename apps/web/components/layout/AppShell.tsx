@@ -81,6 +81,14 @@ const icons = {
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   ),
+  report: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5">
+      <path d="M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14" />
+      <path d="M8 9h4" />
+      <path d="M8 13h6" />
+      <path d="M6 21h12" />
+    </svg>
+  ),
   menu:  (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
       <line x1="3" y1="6"  x2="21" y2="6" />
@@ -123,6 +131,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { href: '/comunicazioni', label: 'Comunicazioni', icon: icons.communications },
+  { href: '/report', label: 'Report', icon: icons.report },
   { href: '/impostazioni', label: 'Impostazioni', icon: icons.settings },
 ];
 

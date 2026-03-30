@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAppointmentsToday, getBirthdayPatients, getLacSchedules, getPendingOrdersDashboard, type ApiAppointment, type ApiLacSchedule, type ApiPatient } from '@/lib/api';
+import { useEffect, useMemo, useState } from 'react';
+import { getAppointmentsToday, getBirthdayPatients, getLacSchedules, getPendingOrdersDashboard, getSalesReport, type ApiAppointment, type ApiLacSchedule, type ApiPatient } from '@/lib/api';
 
 interface StatCard {
   label:       string;
@@ -16,6 +16,15 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
   const [orders, setOrders] = useState({ sent: 0, in_progress: 0, ready: 0 });
   const [appointmentsToday, setAppointmentsToday] = useState<ApiAppointment[]>([]);
   const [birthdaysToday, setBirthdaysToday] = useState<ApiPatient[]>([]);
+  const [salesTodayTotal, setSalesTodayTotal] = useState<number | null>(null);
+
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
 
   useEffect(() => {
     getLacSchedules({ expiring_days: 7 })
@@ -41,7 +50,12 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
     getBirthdayPatients().then(({ status, data }) => {
       if (status === 200) setBirthdaysToday(data.data ?? []);
     });
-  }, []);
+
+    void (async () => {
+      const res = await getSalesReport({ from: todayStr, to: todayStr, group_by: 'day' });
+      if (res.status === 200) setSalesTodayTotal(res.data.sales_summary.total_amount ?? 0);
+    })();
+  }, [todayStr]);
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -51,13 +65,23 @@ export default function DashboardHomeClient({ statCards }: { statCards: StatCard
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {statCards.map((card) => (
-          <div key={card.label} className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 md:p-5 shadow-sm">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{card.label}</p>
-            <p className={`mt-2 text-3xl font-bold ${card.color}`}>{card.value}</p>
-            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{card.description}</p>
-          </div>
-        ))}
+        {statCards.map((card) => {
+          const computedValue = (() => {
+            if (card.label === 'Pazienti oggi') return String(appointmentsToday.length);
+            if (card.label === 'Appuntamenti oggi') return String(appointmentsToday.length);
+            if (card.label === 'Ordini in attesa') return String(orders.sent + orders.in_progress + orders.ready);
+            if (card.label === 'Vendite oggi') return salesTodayTotal == null ? '—' : `${salesTodayTotal.toFixed(2)} €`;
+            return card.value;
+          })();
+
+          return (
+            <div key={card.label} className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 md:p-5 shadow-sm">
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{card.label}</p>
+              <p className={`mt-2 text-3xl font-bold ${card.color}`}>{computedValue}</p>
+              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{card.description}</p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
